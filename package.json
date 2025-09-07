@@ -1,0 +1,35 @@
+{
+  "name": "erlc-frsp-dashboard",
+  "version": "1.0.0",
+  "description": "Moderation Dashboard + Discord Bot for ERLC FRSP",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "bot": "node bot.js",
+    "dev": "nodemon server.js"
+  },
+  "keywords": [
+    "discord",
+    "moderation",
+    "dashboard",
+    "erlc",
+    "frsp"
+  ],
+  "author": "YourName",
+  "license": "MIT",
+  "dependencies": {
+    "body-parser": "^1.20.2",
+    "discord.js": "^14.15.3",
+    "dotenv": "^16.3.1",
+    "express": "^4.21.1",
+    "express-session": "^1.17.3",
+    "passport": "^0.7.0",
+    "passport-discord": "^0.1.4"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
