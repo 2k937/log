@@ -12,14 +12,51 @@ if (fs.existsSync(WARN_FILE)) warnings = JSON.parse(fs.readFileSync(WARN_FILE, "
 function saveWarnings() { fs.writeFileSync(WARN_FILE, JSON.stringify(warnings, null, 2)); }
 
 // Moderation functions
-async function banUser(userId, guildId) { try { const g = await client.guilds.fetch(guildId); await g.members.ban(userId, { reason: "Dashboard/Command ban" }); } catch (e) { console.error(e); } }
-async function unbanUser(userId, guildId) { try { const g = await client.guilds.fetch(guildId); await g.bans.remove(userId, "Dashboard/Command unban"); } catch (e) { console.error(e); } }
-async function kickUser(userId, guildId) { try { const g = await client.guilds.fetch(guildId); const m = await g.members.fetch(userId); await m.kick("Dashboard/Command kick"); } catch (e) { console.error(e); } }
-async function timeoutUser(userId, guildId) { try { const g = await client.guilds.fetch(guildId); const m = await g.members.fetch(userId); await m.timeout(10 * 60 * 1000, "Dashboard/Command timeout"); } catch (e) { console.error(e); } }
-async function removeTimeout(userId, guildId) { try { const g = await client.guilds.fetch(guildId); const m = await g.members.fetch(userId); await m.timeout(null); } catch (e) { console.error(e); } }
-function warnUser(userId, reason) { if (!warnings[userId]) warnings[userId] = []; warnings[userId].push(reason || "No reason"); saveWarnings(); }
-function getWarnings(userId) { return { userId, warnings: warnings[userId] || [] }; }
-function unwarnUser(userId) { warnings[userId] = []; saveWarnings(); }
+async function banUser(userId, guildId) { 
+  try { 
+    const g = await client.guilds.fetch(guildId); 
+    await g.members.ban(userId, { reason: "Dashboard/Command ban" }); 
+  } catch (e) { console.error(e); } 
+}
+async function unbanUser(userId, guildId) { 
+  try { 
+    const g = await client.guilds.fetch(guildId); 
+    await g.bans.remove(userId, "Dashboard/Command unban"); 
+  } catch (e) { console.error(e); } 
+}
+async function kickUser(userId, guildId) { 
+  try { 
+    const g = await client.guilds.fetch(guildId); 
+    const m = await g.members.fetch(userId); 
+    await m.kick("Dashboard/Command kick"); 
+  } catch (e) { console.error(e); } 
+}
+async function timeoutUser(userId, guildId) { 
+  try { 
+    const g = await client.guilds.fetch(guildId); 
+    const m = await g.members.fetch(userId); 
+    await m.timeout(10 * 60 * 1000, "Dashboard/Command timeout"); 
+  } catch (e) { console.error(e); } 
+}
+async function removeTimeout(userId, guildId) { 
+  try { 
+    const g = await client.guilds.fetch(guildId); 
+    const m = await g.members.fetch(userId); 
+    await m.timeout(null); 
+  } catch (e) { console.error(e); } 
+}
+function warnUser(userId, reason) { 
+  if (!warnings[userId]) warnings[userId] = []; 
+  warnings[userId].push(reason || "No reason"); 
+  saveWarnings(); 
+}
+function getWarnings(userId) { 
+  return { userId, warnings: warnings[userId] || [] }; 
+}
+function unwarnUser(userId) { 
+  warnings[userId] = []; 
+  saveWarnings(); 
+}
 
 // Slash commands
 const commands = [
@@ -48,61 +85,71 @@ client.on("interactionCreate", async interaction => {
   if (!interaction.isChatInputCommand()) return;
 
   const staffRoles = ["1403175043353284638", "1414300431924072589"];
-  if (!interaction.member.roles.cache.some(r => staffRoles.includes(r.id))) 
+  if (!interaction.member.roles.cache.some(r => staffRoles.includes(r.id))) {
     return interaction.reply({ content: "❌ No permission", ephemeral: true });
+  }
+
+  // Defer reply to prevent Unknown Interaction errors
+  await interaction.deferReply({ ephemeral: true }).catch(() => {});
 
   const user = interaction.options.getUser("user");
+  const embed = new EmbedBuilder().setFooter({ text: "ERLC FRSP Dashboard" }).setTimestamp();
 
-  const embed = new EmbedBuilder()
-    .setColor("#FF0000")
-    .setFooter({ text: "ERLC FRSP Dashboard" })
-    .setTimestamp();
+  try {
+    switch (interaction.commandName) {
+      case "ban":
+        await banUser(user.id, interaction.guild.id);
+        embed.setTitle("User Banned").setDescription(`🔨 Banned **${user.tag}**`).setColor("#FF0000");
+        break;
 
-  switch (interaction.commandName) {
-    case "ban":
-      await banUser(user.id, interaction.guild.id);
-      embed.setTitle("User Banned").setDescription(`🔨 Banned **${user.tag}**`);
-      return interaction.reply({ embeds: [embed] });
+      case "unban":
+        const unbanId = interaction.options.getString("userid");
+        await unbanUser(unbanId, interaction.guild.id);
+        embed.setTitle("User Unbanned").setDescription(`✅ Unbanned <@${unbanId}>`).setColor("#00FF00");
+        break;
 
-    case "unban":
-      const unbanId = interaction.options.getString("userid");
-      await unbanUser(unbanId, interaction.guild.id);
-      embed.setTitle("User Unbanned").setDescription(`✅ Unbanned <@${unbanId}>`).setColor("#00FF00");
-      return interaction.reply({ embeds: [embed] });
+      case "kick":
+        await kickUser(user.id, interaction.guild.id);
+        embed.setTitle("User Kicked").setDescription(`👢 Kicked **${user.tag}**`).setColor("#FFA500");
+        break;
 
-    case "kick":
-      await kickUser(user.id, interaction.guild.id);
-      embed.setTitle("User Kicked").setDescription(`👢 Kicked **${user.tag}**`).setColor("#FFA500");
-      return interaction.reply({ embeds: [embed] });
+      case "timeout":
+        await timeoutUser(user.id, interaction.guild.id);
+        embed.setTitle("User Timed Out").setDescription(`⏳ Timeout 10 minutes for **${user.tag}**`).setColor("#800080");
+        break;
 
-    case "timeout":
-      await timeoutUser(user.id, interaction.guild.id);
-      embed.setTitle("User Timed Out").setDescription(`⏳ Timeout 10 minutes for **${user.tag}**`).setColor("#800080");
-      return interaction.reply({ embeds: [embed] });
+      case "untimeout":
+        await removeTimeout(user.id, interaction.guild.id);
+        embed.setTitle("Timeout Removed").setDescription(`✅ Removed timeout for **${user.tag}**`).setColor("#00FFFF");
+        break;
 
-    case "untimeout":
-      await removeTimeout(user.id, interaction.guild.id);
-      embed.setTitle("Timeout Removed").setDescription(`✅ Removed timeout for **${user.tag}**`).setColor("#00FFFF");
-      return interaction.reply({ embeds: [embed] });
+      case "warn":
+        const reason = interaction.options.getString("reason") || "No reason";
+        warnUser(user.id, reason);
+        embed.setTitle("User Warned").setDescription(`⚠️ Warned **${user.tag}**\nReason: ${reason}`).setColor("#FFA500");
+        break;
 
-    case "warn":
-      const reason = interaction.options.getString("reason") || "No reason";
-      warnUser(user.id, reason);
-      embed.setTitle("User Warned").setDescription(`⚠️ Warned **${user.tag}**\nReason: ${reason}`).setColor("#FFA500");
-      return interaction.reply({ embeds: [embed] });
+      case "warnings":
+        const warningsList = getWarnings(user.id).warnings;
+        embed.setTitle("User Warnings")
+          .setDescription(warningsList.length ? warningsList.map((w,i)=>`${i+1}. ${w}`).join("\n") : "No warnings")
+          .setColor("#808080");
+        break;
 
-    case "warnings":
-      const warningsList = getWarnings(user.id).warnings;
-      embed.setTitle("User Warnings").setDescription(warningsList.length ? warningsList.map((w,i)=>`${i+1}. ${w}`).join("\n") : "No warnings").setColor("#808080");
-      return interaction.reply({ embeds: [embed] });
+      case "unwarn":
+        unwarnUser(user.id);
+        embed.setTitle("Warnings Cleared").setDescription(`✅ Cleared warnings for **${user.tag}**`).setColor("#FF69B4");
+        break;
+    }
 
-    case "unwarn":
-      unwarnUser(user.id);
-      embed.setTitle("Warnings Cleared").setDescription(`✅ Cleared warnings for **${user.tag}**`).setColor("#FF69B4");
-      return interaction.reply({ embeds: [embed] });
+    await interaction.editReply({ embeds: [embed] });
+  } catch (err) {
+    console.error(err);
+    await interaction.editReply({ content: "❌ Something went wrong", embeds: [] });
   }
 });
 
 module.exports = { banUser, unbanUser, kickUser, timeoutUser, removeTimeout, warnUser, getWarnings, unwarnUser };
 
 client.login(process.env.TOKEN);
+
