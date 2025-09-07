@@ -162,9 +162,12 @@ client.on("messageCreate", async message => {
     const staffRoles = ["1403175043353284638", "1414300431924072589"];
     if (!message.member.roles.cache.some(r => staffRoles.includes(r.id))) return message.channel.send("❌ No permission");
 
-    const targetId = args[0]?.replace(/[<@!>]/g, "");
-    const targetMember = await resolveUser(message.guild, args[0]);
-    const reason = args.slice(1).join(" ") || "No reason";
+const targetArg = args[0];
+if (!targetArg) return message.channel.send("❌ Please provide a user mention or ID");
+
+const targetId = targetArg.replace(/[<@!>]/g, ""); // safe now
+const targetMember = await resolveUser(message.guild, targetArg); // resolves mention or ID
+const reason = args.slice(1).join(" ") || "No reason";
 
     const embed = new EmbedBuilder().setFooter({ text: "ERLC FRSP Dashboard" }).setTimestamp();
 
