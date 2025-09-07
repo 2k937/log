@@ -81,7 +81,7 @@ const commands = [
 // Register slash commands
 client.once("ready", async () => {
     console.log(`✅ Logged in as ${client.user.tag}`);
-    client.user.setActivity("ERLC FRSP", { type: 3 });
+    client.user.setActivity("Dashboard", { type: 3 });
     const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
     await rest.put(Routes.applicationGuildCommands(client.user.id, process.env.GUILD_ID), { body: commands });
     console.log("✅ Slash commands registered");
