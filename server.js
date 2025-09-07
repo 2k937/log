@@ -37,7 +37,7 @@ app.get("/auth/discord/callback", passport.authenticate("discord", { failureRedi
 function checkAuth(req, res, next) {
   if (!req.isAuthenticated()) return res.redirect("/");
   const roles = req.user.guilds.find(g => g.id === process.env.GUILD_ID)?.roles || [];
-  const allowedRoles = ["1308099417315999804", "1308100754778886287"];
+  const allowedRoles = ["1403175043353284638", "1414300431924072589"];
   if (!roles.some(r => allowedRoles.includes(r))) return res.status(403).send("No permission");
   next();
 }
