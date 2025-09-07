@@ -3,73 +3,126 @@
 <head>
   <meta charset="UTF-8">
   <title>ERLC FRSP Moderation Dashboard</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss/dist/tailwind.min.css">
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-900 text-white font-sans">
-  <div class="container mx-auto p-6">
-    <h1 class="text-3xl font-bold mb-6">🚔 ERLC FRSP Moderation Dashboard</h1>
+<body class="bg-gray-900 text-white font-sans min-h-screen flex flex-col">
 
-    <div id="login" class="mb-6">
-      <button onclick="login()" class="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700">Login with Discord</button>
+  <!-- Header -->
+  <header class="bg-gray-800 shadow p-4">
+    <div class="container mx-auto flex justify-between items-center">
+      <h1 class="text-2xl md:text-3xl font-bold text-blue-500">🚔 ERLC FRSP Dashboard</h1>
+      <button id="loginBtn" onclick="login()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded transition">Login with Discord</button>
     </div>
+  </header>
 
+  <!-- Main content -->
+  <main class="flex-1 container mx-auto p-6">
+    
     <div id="dashboard" class="hidden">
-      <h2 class="text-xl font-semibold mb-4">Moderation Panel</h2>
+      <h2 class="text-xl md:text-2xl font-semibold mb-6 border-b border-gray-700 pb-2">Moderation Panel</h2>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="p-4 bg-gray-800 rounded">
-          <h3 class="text-lg font-bold">Ban User</h3>
-          <input id="banId" placeholder="User ID" class="p-2 text-black w-full mb-2">
-          <button onclick="action('ban','banId')" class="bg-red-600 px-3 py-1 rounded hover:bg-red-700">Ban</button>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+
+        <!-- Ban User -->
+        <div class="bg-gray-800 rounded-xl p-5 shadow hover:shadow-lg transition transform hover:-translate-y-1">
+          <h3 class="font-semibold text-lg mb-3 text-red-500">Ban User</h3>
+          <input id="banId" placeholder="User ID" class="w-full p-2 mb-3 rounded text-black">
+          <button onclick="action('ban','banId')" class="w-full bg-red-600 hover:bg-red-700 px-3 py-2 rounded transition">Ban</button>
         </div>
-        <div class="p-4 bg-gray-800 rounded">
-          <h3 class="text-lg font-bold">Unban User</h3>
-          <input id="unbanId" placeholder="User ID" class="p-2 text-black w-full mb-2">
-          <button onclick="action('unban','unbanId')" class="bg-green-600 px-3 py-1 rounded hover:bg-green-700">Unban</button>
+
+        <!-- Unban User -->
+        <div class="bg-gray-800 rounded-xl p-5 shadow hover:shadow-lg transition transform hover:-translate-y-1">
+          <h3 class="font-semibold text-lg mb-3 text-green-500">Unban User</h3>
+          <input id="unbanId" placeholder="User ID" class="w-full p-2 mb-3 rounded text-black">
+          <button onclick="action('unban','unbanId')" class="w-full bg-green-600 hover:bg-green-700 px-3 py-2 rounded transition">Unban</button>
         </div>
-        <div class="p-4 bg-gray-800 rounded">
-          <h3 class="text-lg font-bold">Kick User</h3>
-          <input id="kickId" placeholder="User ID" class="p-2 text-black w-full mb-2">
-          <button onclick="action('kick','kickId')" class="bg-yellow-600 px-3 py-1 rounded hover:bg-yellow-700">Kick</button>
+
+        <!-- Kick User -->
+        <div class="bg-gray-800 rounded-xl p-5 shadow hover:shadow-lg transition transform hover:-translate-y-1">
+          <h3 class="font-semibold text-lg mb-3 text-yellow-400">Kick User</h3>
+          <input id="kickId" placeholder="User ID" class="w-full p-2 mb-3 rounded text-black">
+          <button onclick="action('kick','kickId')" class="w-full bg-yellow-600 hover:bg-yellow-700 px-3 py-2 rounded transition">Kick</button>
         </div>
-        <div class="p-4 bg-gray-800 rounded">
-          <h3 class="text-lg font-bold">Timeout User</h3>
-          <input id="timeoutId" placeholder="User ID" class="p-2 text-black w-full mb-2">
-          <button onclick="action('timeout','timeoutId')" class="bg-purple-600 px-3 py-1 rounded hover:bg-purple-700">Timeout (10m)</button>
+
+        <!-- Timeout User -->
+        <div class="bg-gray-800 rounded-xl p-5 shadow hover:shadow-lg transition transform hover:-translate-y-1">
+          <h3 class="font-semibold text-lg mb-3 text-purple-400">Timeout User</h3>
+          <input id="timeoutId" placeholder="User ID" class="w-full p-2 mb-3 rounded text-black">
+          <button onclick="action('timeout','timeoutId')" class="w-full bg-purple-600 hover:bg-purple-700 px-3 py-2 rounded transition">Timeout (10m)</button>
         </div>
-        <div class="p-4 bg-gray-800 rounded">
-          <h3 class="text-lg font-bold">Remove Timeout</h3>
-          <input id="untimeoutId" placeholder="User ID" class="p-2 text-black w-full mb-2">
-          <button onclick="action('untimeout','untimeoutId')" class="bg-blue-600 px-3 py-1 rounded hover:bg-blue-700">Remove Timeout</button>
+
+        <!-- Remove Timeout -->
+        <div class="bg-gray-800 rounded-xl p-5 shadow hover:shadow-lg transition transform hover:-translate-y-1">
+          <h3 class="font-semibold text-lg mb-3 text-blue-400">Remove Timeout</h3>
+          <input id="untimeoutId" placeholder="User ID" class="w-full p-2 mb-3 rounded text-black">
+          <button onclick="action('untimeout','untimeoutId')" class="w-full bg-blue-600 hover:bg-blue-700 px-3 py-2 rounded transition">Remove Timeout</button>
         </div>
-        <div class="p-4 bg-gray-800 rounded">
-          <h3 class="text-lg font-bold">Warn User</h3>
-          <input id="warnId" placeholder="User ID" class="p-2 text-black w-full mb-2">
-          <input id="warnReason" placeholder="Reason" class="p-2 text-black w-full mb-2">
-          <button onclick="warnUser()" class="bg-orange-600 px-3 py-1 rounded hover:bg-orange-700">Warn</button>
+
+        <!-- Warn User -->
+        <div class="bg-gray-800 rounded-xl p-5 shadow hover:shadow-lg transition transform hover:-translate-y-1">
+          <h3 class="font-semibold text-lg mb-3 text-orange-400">Warn User</h3>
+          <input id="warnId" placeholder="User ID" class="w-full p-2 mb-2 rounded text-black">
+          <input id="warnReason" placeholder="Reason" class="w-full p-2 mb-3 rounded text-black">
+          <button onclick="warnUser()" class="w-full bg-orange-600 hover:bg-orange-700 px-3 py-2 rounded transition">Warn</button>
         </div>
-        <div class="p-4 bg-gray-800 rounded">
-          <h3 class="text-lg font-bold">Check Warnings</h3>
-          <input id="warningsId" placeholder="User ID" class="p-2 text-black w-full mb-2">
-          <button onclick="checkWarnings()" class="bg-gray-600 px-3 py-1 rounded hover:bg-gray-700">Check</button>
-          <pre id="warningsResult" class="mt-2 text-sm"></pre>
+
+        <!-- Check Warnings -->
+        <div class="bg-gray-800 rounded-xl p-5 shadow hover:shadow-lg transition transform hover:-translate-y-1">
+          <h3 class="font-semibold text-lg mb-3 text-gray-300">Check Warnings</h3>
+          <input id="warningsId" placeholder="User ID" class="w-full p-2 mb-3 rounded text-black">
+          <button onclick="checkWarnings()" class="w-full bg-gray-600 hover:bg-gray-700 px-3 py-2 rounded transition">Check</button>
+          <pre id="warningsResult" class="mt-2 text-sm bg-gray-900 p-2 rounded overflow-x-auto"></pre>
         </div>
-        <div class="p-4 bg-gray-800 rounded">
-          <h3 class="text-lg font-bold">Unwarn User</h3>
-          <input id="unwarnId" placeholder="User ID" class="p-2 text-black w-full mb-2">
-          <button onclick="action('unwarn','unwarnId')" class="bg-pink-600 px-3 py-1 rounded hover:bg-pink-700">Unwarn</button>
+
+        <!-- Unwarn User -->
+        <div class="bg-gray-800 rounded-xl p-5 shadow hover:shadow-lg transition transform hover:-translate-y-1">
+          <h3 class="font-semibold text-lg mb-3 text-pink-400">Unwarn User</h3>
+          <input id="unwarnId" placeholder="User ID" class="w-full p-2 mb-3 rounded text-black">
+          <button onclick="action('unwarn','unwarnId')" class="w-full bg-pink-600 hover:bg-pink-700 px-3 py-2 rounded transition">Unwarn</button>
         </div>
+
       </div>
     </div>
-  </div>
+
+    <div id="notLogged" class="text-center text-gray-400 mt-12">
+      Please log in with Discord to access moderation tools.
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-gray-800 text-gray-400 p-4 text-center">
+    ERLC FRSP Dashboard • Private Use Only
+  </footer>
 
   <script>
     function login() {
       window.location.href = "/auth/discord";
     }
 
+    async function checkLogin() {
+      try {
+        const res = await fetch("/api/check-auth");
+        if(res.status === 200){
+          // Logged in
+          document.getElementById("dashboard").classList.remove("hidden");
+          document.getElementById("loginBtn").style.display = "none";
+          document.getElementById("notLogged").style.display = "none";
+        } else {
+          document.getElementById("dashboard").classList.add("hidden");
+          document.getElementById("loginBtn").style.display = "block";
+          document.getElementById("notLogged").style.display = "block";
+        }
+      } catch(err){
+        console.error(err);
+      }
+    }
+
+    checkLogin();
+
     function action(type, field) {
       const id = document.getElementById(field).value;
+      if(!id) return alert("Please enter a User ID!");
       fetch(`/api/${type}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -80,6 +133,7 @@
     function warnUser() {
       const id = document.getElementById("warnId").value;
       const reason = document.getElementById("warnReason").value;
+      if(!id || !reason) return alert("Please enter User ID and reason!");
       fetch("/api/warn", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -89,6 +143,7 @@
 
     function checkWarnings() {
       const id = document.getElementById("warningsId").value;
+      if(!id) return alert("Please enter a User ID!");
       fetch(`/api/warnings/${id}`)
         .then(r => r.json())
         .then(res => {
@@ -96,5 +151,6 @@
         });
     }
   </script>
+
 </body>
 </html>
