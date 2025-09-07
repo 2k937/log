@@ -8,9 +8,6 @@ require("dotenv").config();
 
 const bot = require("./bot.js");
 
-
-
-
 const { banUser, unbanUser, kickUser, timeoutUser, removeTimeout, warnUser, getWarnings, unwarnUser } = require("./bot");
 
 const app = express();
