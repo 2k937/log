@@ -23,20 +23,7 @@
     
     <div id="dashboard" class="hidden">
       <h2 class="text-xl md:text-2xl font-semibold mb-6 border-b border-gray-700 pb-2">Moderation Panel</h2>
-
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-
-        <!-- Moderation Cards -->
-        <template id="modCardTemplate">
-          <div class="bg-gray-800 rounded-2xl p-5 shadow-lg hover:shadow-xl transition transform hover:-translate-y-1">
-            <h3 class="font-semibold text-lg mb-3"></h3>
-            <input class="w-full p-2 mb-3 rounded text-black" placeholder="User ID">
-            <input class="w-full p-2 mb-3 rounded text-black hidden" placeholder="Reason (if any)">
-            <button class="w-full px-3 py-2 rounded font-semibold transition"></button>
-          </div>
-        </template>
-
-      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
     </div>
 
     <div id="notLogged" class="text-center text-gray-400 mt-12">
@@ -52,7 +39,7 @@
 
   <script>
     function login() {
-      window.location.href = "/auth/discord";
+      window.location.href = "/auth/discord"; // Your server handles Discord OAuth
     }
 
     async function checkLogin() {
@@ -82,39 +69,66 @@
         { title: "Unwarn User", type: "unwarn", color: "pink", reason: false }
       ];
 
-      const template = document.getElementById("modCardTemplate");
-
       cards.forEach(c => {
-        const clone = template.content.cloneNode(true);
-        const card = clone.querySelector("div");
-        const title = clone.querySelector("h3");
-        const input = clone.querySelector("input:first-of-type");
-        const reasonInput = clone.querySelector("input:last-of-type");
-        const button = clone.querySelector("button");
-
+        const card = document.createElement("div");
+        card.className = `bg-gray-800 rounded-2xl p-5 shadow-lg hover:shadow-xl transition transform hover:-translate-y-1`;
+        
+        const title = document.createElement("h3");
+        title.className = `font-semibold text-lg mb-3 text-${c.color}-400`;
         title.textContent = c.title;
-        title.classList.add(`text-${c.color}-400`);
-        button.textContent = c.title.includes("Check") ? "Check" : c.title.includes("Timeout") && !c.title.includes("Remove") ? "Timeout (10m)" : c.title;
-        button.classList.add(`bg-${c.color}-600`, `hover:bg-${c.color}-700`);
-        if(c.reason) reasonInput.classList.remove("hidden");
+        
+        const input = document.createElement("input");
+        input.placeholder = "User ID";
+        input.className = "w-full p-2 mb-3 rounded text-black";
 
-        button.onclick = () => {
+        const reasonInput = document.createElement("input");
+        reasonInput.placeholder = "Reason (if any)";
+        reasonInput.className = "w-full p-2 mb-3 rounded text-black";
+        if(!c.reason) reasonInput.style.display = "none";
+
+        const button = document.createElement("button");
+        button.textContent = c.title.includes("Check") ? "Check" : c.title.includes("Timeout") && !c.title.includes("Remove") ? "Timeout (10m)" : c.title;
+        button.className = `w-full px-3 py-2 rounded font-semibold transition bg-${c.color}-600 hover:bg-${c.color}-700`;
+
+        const output = document.createElement("pre");
+        output.className = "mt-2 text-sm bg-gray-900 p-2 rounded overflow-x-auto";
+        output.style.display = "none";
+
+        button.onclick = async () => {
           const userId = input.value;
           const reason = reasonInput.value || "";
           if(!userId) return alert("Please enter a User ID!");
-          let body = { userId };
-          if(c.reason) body.reason = reason;
-          fetch(`/api/${c.type}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(body)
-          })
-          .then(r => r.json())
-          .then(res => alert(res.message))
-          .catch(e => console.error(e));
+
+          try {
+            if(c.type === "warnings") {
+              const res = await fetch(`/api/warnings/${userId}`);
+              const data = await res.json();
+              output.textContent = JSON.stringify(data, null, 2);
+              output.style.display = "block";
+            } else {
+              const body = { userId };
+              if(c.reason) body.reason = reason;
+              const res = await fetch(`/api/${c.type}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(body)
+              });
+              const data = await res.json();
+              alert(data.message);
+            }
+          } catch(err) {
+            console.error(err);
+            alert("An error occurred.");
+          }
         };
 
-        container.appendChild(clone);
+        card.appendChild(title);
+        card.appendChild(input);
+        if(c.reason) card.appendChild(reasonInput);
+        card.appendChild(button);
+        card.appendChild(output);
+
+        container.appendChild(card);
       });
     }
 
@@ -123,4 +137,5 @@
 
 </body>
 </html>
+
 
