@@ -8,10 +8,13 @@
 <body class="bg-gray-900 text-white font-sans min-h-screen flex flex-col">
 
   <!-- Header -->
-  <header class="bg-gray-800 shadow p-4">
+  <header class="bg-gray-800 shadow-md p-4">
     <div class="container mx-auto flex justify-between items-center">
-      <h1 class="text-2xl md:text-3xl font-bold text-blue-500">🚔 ERLC FRSP Dashboard</h1>
-      <button id="loginBtn" onclick="login()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded transition">Login with Discord</button>
+      <div class="flex items-center gap-3">
+        <img src="https://cdn.discordapp.com/icons/1307970869682765935/45ce31fa28789428aa398f5c4f6f00ea.png?size=4096" alt="Logo" class="w-12 h-12 rounded-full border-2 border-blue-500">
+        <h1 class="text-2xl md:text-3xl font-bold text-blue-400">🚔 ERLC FRSP Dashboard</h1>
+      </div>
+      <button id="loginBtn" onclick="login()" class="bg-blue-600 hover:bg-blue-700 px-5 py-2 rounded-lg font-semibold transition-all shadow-md hover:shadow-xl">Login with Discord</button>
     </div>
   </header>
 
@@ -23,63 +26,15 @@
 
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
 
-        <!-- Ban User -->
-        <div class="bg-gray-800 rounded-xl p-5 shadow hover:shadow-lg transition transform hover:-translate-y-1">
-          <h3 class="font-semibold text-lg mb-3 text-red-500">Ban User</h3>
-          <input id="banId" placeholder="User ID" class="w-full p-2 mb-3 rounded text-black">
-          <button onclick="action('ban','banId')" class="w-full bg-red-600 hover:bg-red-700 px-3 py-2 rounded transition">Ban</button>
-        </div>
-
-        <!-- Unban User -->
-        <div class="bg-gray-800 rounded-xl p-5 shadow hover:shadow-lg transition transform hover:-translate-y-1">
-          <h3 class="font-semibold text-lg mb-3 text-green-500">Unban User</h3>
-          <input id="unbanId" placeholder="User ID" class="w-full p-2 mb-3 rounded text-black">
-          <button onclick="action('unban','unbanId')" class="w-full bg-green-600 hover:bg-green-700 px-3 py-2 rounded transition">Unban</button>
-        </div>
-
-        <!-- Kick User -->
-        <div class="bg-gray-800 rounded-xl p-5 shadow hover:shadow-lg transition transform hover:-translate-y-1">
-          <h3 class="font-semibold text-lg mb-3 text-yellow-400">Kick User</h3>
-          <input id="kickId" placeholder="User ID" class="w-full p-2 mb-3 rounded text-black">
-          <button onclick="action('kick','kickId')" class="w-full bg-yellow-600 hover:bg-yellow-700 px-3 py-2 rounded transition">Kick</button>
-        </div>
-
-        <!-- Timeout User -->
-        <div class="bg-gray-800 rounded-xl p-5 shadow hover:shadow-lg transition transform hover:-translate-y-1">
-          <h3 class="font-semibold text-lg mb-3 text-purple-400">Timeout User</h3>
-          <input id="timeoutId" placeholder="User ID" class="w-full p-2 mb-3 rounded text-black">
-          <button onclick="action('timeout','timeoutId')" class="w-full bg-purple-600 hover:bg-purple-700 px-3 py-2 rounded transition">Timeout (10m)</button>
-        </div>
-
-        <!-- Remove Timeout -->
-        <div class="bg-gray-800 rounded-xl p-5 shadow hover:shadow-lg transition transform hover:-translate-y-1">
-          <h3 class="font-semibold text-lg mb-3 text-blue-400">Remove Timeout</h3>
-          <input id="untimeoutId" placeholder="User ID" class="w-full p-2 mb-3 rounded text-black">
-          <button onclick="action('untimeout','untimeoutId')" class="w-full bg-blue-600 hover:bg-blue-700 px-3 py-2 rounded transition">Remove Timeout</button>
-        </div>
-
-        <!-- Warn User -->
-        <div class="bg-gray-800 rounded-xl p-5 shadow hover:shadow-lg transition transform hover:-translate-y-1">
-          <h3 class="font-semibold text-lg mb-3 text-orange-400">Warn User</h3>
-          <input id="warnId" placeholder="User ID" class="w-full p-2 mb-2 rounded text-black">
-          <input id="warnReason" placeholder="Reason" class="w-full p-2 mb-3 rounded text-black">
-          <button onclick="warnUser()" class="w-full bg-orange-600 hover:bg-orange-700 px-3 py-2 rounded transition">Warn</button>
-        </div>
-
-        <!-- Check Warnings -->
-        <div class="bg-gray-800 rounded-xl p-5 shadow hover:shadow-lg transition transform hover:-translate-y-1">
-          <h3 class="font-semibold text-lg mb-3 text-gray-300">Check Warnings</h3>
-          <input id="warningsId" placeholder="User ID" class="w-full p-2 mb-3 rounded text-black">
-          <button onclick="checkWarnings()" class="w-full bg-gray-600 hover:bg-gray-700 px-3 py-2 rounded transition">Check</button>
-          <pre id="warningsResult" class="mt-2 text-sm bg-gray-900 p-2 rounded overflow-x-auto"></pre>
-        </div>
-
-        <!-- Unwarn User -->
-        <div class="bg-gray-800 rounded-xl p-5 shadow hover:shadow-lg transition transform hover:-translate-y-1">
-          <h3 class="font-semibold text-lg mb-3 text-pink-400">Unwarn User</h3>
-          <input id="unwarnId" placeholder="User ID" class="w-full p-2 mb-3 rounded text-black">
-          <button onclick="action('unwarn','unwarnId')" class="w-full bg-pink-600 hover:bg-pink-700 px-3 py-2 rounded transition">Unwarn</button>
-        </div>
+        <!-- Moderation Cards -->
+        <template id="modCardTemplate">
+          <div class="bg-gray-800 rounded-2xl p-5 shadow-lg hover:shadow-xl transition transform hover:-translate-y-1">
+            <h3 class="font-semibold text-lg mb-3"></h3>
+            <input class="w-full p-2 mb-3 rounded text-black" placeholder="User ID">
+            <input class="w-full p-2 mb-3 rounded text-black hidden" placeholder="Reason (if any)">
+            <button class="w-full px-3 py-2 rounded font-semibold transition"></button>
+          </div>
+        </template>
 
       </div>
     </div>
@@ -104,53 +59,68 @@
       try {
         const res = await fetch("/api/check-auth");
         if(res.status === 200){
-          // Logged in
           document.getElementById("dashboard").classList.remove("hidden");
           document.getElementById("loginBtn").style.display = "none";
           document.getElementById("notLogged").style.display = "none";
-        } else {
-          document.getElementById("dashboard").classList.add("hidden");
-          document.getElementById("loginBtn").style.display = "block";
-          document.getElementById("notLogged").style.display = "block";
+          initDashboard();
         }
       } catch(err){
         console.error(err);
       }
     }
 
+    function initDashboard() {
+      const container = document.querySelector("#dashboard > div.grid");
+      const cards = [
+        { title: "Ban User", type: "ban", color: "red", reason: false },
+        { title: "Unban User", type: "unban", color: "green", reason: false },
+        { title: "Kick User", type: "kick", color: "yellow", reason: false },
+        { title: "Timeout User", type: "timeout", color: "purple", reason: false },
+        { title: "Remove Timeout", type: "untimeout", color: "blue", reason: false },
+        { title: "Warn User", type: "warn", color: "orange", reason: true },
+        { title: "Check Warnings", type: "warnings", color: "gray", reason: false },
+        { title: "Unwarn User", type: "unwarn", color: "pink", reason: false }
+      ];
+
+      const template = document.getElementById("modCardTemplate");
+
+      cards.forEach(c => {
+        const clone = template.content.cloneNode(true);
+        const card = clone.querySelector("div");
+        const title = clone.querySelector("h3");
+        const input = clone.querySelector("input:first-of-type");
+        const reasonInput = clone.querySelector("input:last-of-type");
+        const button = clone.querySelector("button");
+
+        title.textContent = c.title;
+        title.classList.add(`text-${c.color}-400`);
+        button.textContent = c.title.includes("Check") ? "Check" : c.title.includes("Timeout") && !c.title.includes("Remove") ? "Timeout (10m)" : c.title;
+        button.classList.add(`bg-${c.color}-600`, `hover:bg-${c.color}-700`);
+        if(c.reason) reasonInput.classList.remove("hidden");
+
+        button.onclick = () => {
+          const userId = input.value;
+          const reason = reasonInput.value || "";
+          if(!userId) return alert("Please enter a User ID!");
+          let body = { userId };
+          if(c.reason) body.reason = reason;
+          fetch(`/api/${c.type}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body)
+          })
+          .then(r => r.json())
+          .then(res => alert(res.message))
+          .catch(e => console.error(e));
+        };
+
+        container.appendChild(clone);
+      });
+    }
+
     checkLogin();
-
-    function action(type, field) {
-      const id = document.getElementById(field).value;
-      if(!id) return alert("Please enter a User ID!");
-      fetch(`/api/${type}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: id })
-      }).then(r => r.json()).then(res => alert(res.message));
-    }
-
-    function warnUser() {
-      const id = document.getElementById("warnId").value;
-      const reason = document.getElementById("warnReason").value;
-      if(!id || !reason) return alert("Please enter User ID and reason!");
-      fetch("/api/warn", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: id, reason })
-      }).then(r => r.json()).then(res => alert(res.message));
-    }
-
-    function checkWarnings() {
-      const id = document.getElementById("warningsId").value;
-      if(!id) return alert("Please enter a User ID!");
-      fetch(`/api/warnings/${id}`)
-        .then(r => r.json())
-        .then(res => {
-          document.getElementById("warningsResult").textContent = JSON.stringify(res, null, 2);
-        });
-    }
   </script>
 
 </body>
 </html>
+
