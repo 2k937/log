@@ -43,7 +43,7 @@ client.once("ready", async () => {
 
 client.on("interactionCreate", async interaction => {
   if (!interaction.isChatInputCommand()) return;
-  const staffRoles = ["1308100754778886287", "1308100754778886287"];
+  const staffRoles = ["1403175043353284638", "1414300431924072589"];
   if (!interaction.member.roles.cache.some(r => staffRoles.includes(r.id))) return interaction.reply({ content: "❌ No permission", ephemeral: true });
 
   const user = interaction.options.getUser("user");
