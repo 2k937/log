@@ -24,7 +24,8 @@
     "express": "^4.21.1",
     "express-session": "^1.17.3",
     "passport": "^0.7.0",
-    "passport-discord": "^0.1.4"
+    "passport-discord": "^0.1.4",
+    "node-fetch": "^2.6.7"
   },
   "devDependencies": {
     "nodemon": "^3.1.0"
@@ -33,3 +34,4 @@
     "node": ">=18.0.0"
   }
 }
+
