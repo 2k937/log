@@ -78,6 +78,12 @@ async function checkAuth(req, res, next) {
 app.get("/", (req, res) => res.sendFile(path.join(__dirname, "index.html")));
 app.get("/dashboard", checkAuth, (req, res) => res.sendFile(path.join(__dirname, "index.html")));
 
+// API to check login status
+app.get("/api/check-auth", (req, res) => {
+  if (req.isAuthenticated()) return res.status(200).json({ loggedIn: true });
+  res.status(401).json({ loggedIn: false });
+});
+
 // API routes
 app.post("/api/ban", checkAuth, async (req, res) => { await banUser(req.body.userId, process.env.GUILD_ID); res.json({ message: `Banned ${req.body.userId}` }); });
 app.post("/api/unban", checkAuth, async (req, res) => { await unbanUser(req.body.userId, process.env.GUILD_ID); res.json({ message: `Unbanned ${req.body.userId}` }); });
