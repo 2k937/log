@@ -6,6 +6,7 @@ const DiscordStrategy = require("passport-discord").Strategy;
 const path = require("path");
 const fetch = require("node-fetch"); // npm install node-fetch
 require("dotenv").config();
+require("./page.js");
 
 const bot = require("./bot.js");
 const { banUser, unbanUser, kickUser, timeoutUser, removeTimeout, warnUser, getWarnings, unwarnUser } = require("./bot");
