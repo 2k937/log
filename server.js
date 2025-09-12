@@ -6,7 +6,6 @@ const DiscordStrategy = require("passport-discord").Strategy;
 const path = require("path");
 const fetch = require("node-fetch"); // npm install node-fetch
 require("dotenv").config();
-require("./page.js");
 
 const bot = require("./bot.js");
 const { banUser, unbanUser, kickUser, timeoutUser, removeTimeout, warnUser, getWarnings, unwarnUser } = require("./bot");
@@ -98,3 +97,5 @@ app.post("/api/unwarn", checkAuth, (req, res) => { unwarnUser(req.body.userId); 
 // Start server
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log(`✅ Dashboard running at http://localhost:${port}`));
+
+require("./page.js");
