@@ -1,6 +1,7 @@
 const { Client, GatewayIntentBits, SlashCommandBuilder, REST, Routes, EmbedBuilder } = require("discord.js");
 const fs = require("fs");
 require("dotenv").config();
+require("./ticket.js")(client); // load ticket system
 
 const PREFIX = "!"; // Prefix commands
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
@@ -225,5 +226,6 @@ const reason = args.slice(1).join(" ") || "No reason";
 
 module.exports = { banUser, unbanUser, kickUser, timeoutUser, removeTimeout, warnUser, getWarnings, unwarnUser };
 client.login(process.env.TOKEN);
+
 
 
