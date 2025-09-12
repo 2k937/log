@@ -81,13 +81,37 @@ const commands = [
     new SlashCommandBuilder().setName("unwarn").setDescription("Clear warnings").addStringOption(o => o.setName("user").setDescription("User mention or ID").setRequired(true))
 ].map(c => c.toJSON());
 
-// Register slash commands
+const { REST, Routes } = require("discord.js");
+
+// Register slash commands and set rotating statuses
 client.once("ready", async () => {
-    console.log(`✅ Logged in as ${client.user.tag}`);
-    client.user.setActivity("Dashboard", { type: 3 });
-    const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
-    await rest.put(Routes.applicationGuildCommands(client.user.id, process.env.GUILD_ID), { body: commands });
+  console.log(`✅ Logged in as ${client.user.tag}`);
+
+  // List of rotating statuses
+  const statuses = [
+    { name: "discord.gg/fsrp0", type: 0 },   // Playing
+    { name: "Mods & Members", type: 3 },     // Watching
+    { name: "BETA Dashboard", type: 3 }      // Watching
+  ];
+
+  let i = 0;
+  setInterval(() => {
+    const status = statuses[i];
+    client.user.setActivity(status.name, { type: status.type });
+    i = (i + 1) % statuses.length; // Loop through statuses
+  }, 10000); // Change every 10 seconds
+
+  // Register slash commands
+  const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
+  try {
+    await rest.put(
+      Routes.applicationGuildCommands(client.user.id, process.env.GUILD_ID),
+      { body: commands }
+    );
     console.log("✅ Slash commands registered");
+  } catch (error) {
+    console.error(error);
+  }
 });
 
 // Helper to resolve user from mention or ID
