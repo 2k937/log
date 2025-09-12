@@ -1,10 +1,12 @@
 const { Client, GatewayIntentBits, SlashCommandBuilder, REST, Routes, EmbedBuilder } = require("discord.js");
 const fs = require("fs");
 require("dotenv").config();
-require("./ticket.js")(client); // load ticket system
+
 
 const PREFIX = "!"; // Prefix commands
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
+
+require("./ticket.js")(client); // load ticket system
 
 let warnings = {};
 const WARN_FILE = "./warnings.json";
