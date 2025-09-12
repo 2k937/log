@@ -1,6 +1,6 @@
 const fetch = require("node-fetch");
 
-const url = process.env.RENDER_EXTERNAL_URL || "https://your-app.onrender.com"; 
+const url = process.env.RENDER_EXTERNAL_URL || "https://moderationdashboard.onrender.com"; 
 // ^ Replace "your-app.onrender.com" with your Render app URL if needed
 
 function ping() {
