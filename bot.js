@@ -81,7 +81,7 @@ const commands = [
     new SlashCommandBuilder().setName("unwarn").setDescription("Clear warnings").addStringOption(o => o.setName("user").setDescription("User mention or ID").setRequired(true))
 ].map(c => c.toJSON());
 
-const { REST, Routes } = require("discord.js");
+
 
 // Register slash commands and set rotating statuses
 client.once("ready", async () => {
