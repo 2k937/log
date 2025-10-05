@@ -124,7 +124,7 @@ async function resolveUser(guild, str) {
 client.on("interactionCreate", async interaction => {
     if (!interaction.isChatInputCommand()) return;
 
-    const staffRoles = ["1403175043353284638", "1414300431924072589"];
+    const staffRoles = ["", ""];
     if (!interaction.member.roles.cache.some(r => staffRoles.includes(r.id))) {
         return interaction.reply({ content: "❌ No permission" });
     }
