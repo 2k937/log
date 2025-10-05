@@ -124,10 +124,16 @@ async function resolveUser(guild, str) {
 client.on("interactionCreate", async interaction => {
     if (!interaction.isChatInputCommand()) return;
 
-    const staffRoles = ["", ""];
-    if (!interaction.member.roles.cache.some(r => staffRoles.includes(r.id))) {
-        return interaction.reply({ content: "❌ No permission" });
-    }
+const staffRoles = [
+  process.env.STAFF_ROLE_1,
+  process.env.STAFF_ROLE_2
+];
+
+if (!interaction.member.roles.cache.some(r => staffRoles.includes(r.id))) {
+    return interaction.reply({ content: "❌ No permission", ephemeral: true });
+}
+
+
 
     const userInput = interaction.options.getString("user");
     const userMember = await resolveUser(interaction.guild, userInput);
@@ -186,8 +192,15 @@ client.on("messageCreate", async message => {
 
     const args = message.content.slice(PREFIX.length).trim().split(/ +/g);
     const cmd = args.shift().toLowerCase();
-    const staffRoles = ["1403175043353284638", "1414300431924072589"];
-    if (!message.member.roles.cache.some(r => staffRoles.includes(r.id))) return message.channel.send("❌ No permission");
+const staffRoles = [
+  process.env.STAFF_ROLE_1,
+  process.env.STAFF_ROLE_2
+];
+
+if (!message.member.roles.cache.some(r => staffRoles.includes(r.id))) {
+    return message.channel.send("❌ You don't have permission to use this command.");
+}
+
 
 const targetArg = args[0];
 if (!targetArg) return message.channel.send("❌ Please provide a user mention or ID");
@@ -196,7 +209,7 @@ const targetId = targetArg.replace(/[<@!>]/g, ""); // safe now
 const targetMember = await resolveUser(message.guild, targetArg); // resolves mention or ID
 const reason = args.slice(1).join(" ") || "No reason";
 
-    const embed = new EmbedBuilder().setFooter({ text: "ERLC FRSP Dashboard" }).setTimestamp();
+    const embed = new EmbedBuilder().setFooter({ text: "Made by idkk" }).setTimestamp();
 
     try {
         switch (cmd) {
