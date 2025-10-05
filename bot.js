@@ -135,7 +135,7 @@ client.on("interactionCreate", async interaction => {
         return interaction.reply({ content: "❌ User not found" });
     }
 
-    const embed = new EmbedBuilder().setFooter({ text: "ERLC FRSP Dashboard" }).setTimestamp();
+    const embed = new EmbedBuilder().setFooter({ text: "Made by idkk" }).setTimestamp();
 
     try {
         switch (interaction.commandName) {
