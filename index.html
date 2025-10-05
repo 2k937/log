@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>ERLC FSRP Moderation Dashboard</title>
+  <title>Moderation Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-900 text-white font-sans min-h-screen flex flex-col">
@@ -11,30 +11,30 @@
   <header class="bg-gray-800 shadow-md p-4">
     <div class="container mx-auto flex justify-between items-center">
       <div class="flex items-center gap-3">
-        <img src="https://cdn.discordapp.com/icons/1307970869682765935/45ce31fa28789428aa398f5c4f6f00ea.png?size=4096" alt="Logo" class="w-12 h-12 rounded-full border-2 border-blue-500">
-        <h1 class="text-2xl md:text-3xl font-bold text-blue-400">🚔 ERLC FSRP Dashboard</h1>
+        <img src="https://cdn-icons-png.flaticon.com/512/942/942748.png" alt="Logo" class="w-12 h-12 rounded-full border-2 border-indigo-500">
+        <h1 class="text-2xl md:text-3xl font-bold text-indigo-400">🛠️ Moderation Dashboard</h1>
       </div>
-      <button id="loginBtn" onclick="login()" class="bg-blue-600 hover:bg-blue-700 px-5 py-2 rounded-lg font-semibold transition-all shadow-md hover:shadow-xl">Login with Discord</button>
+      <button id="loginBtn" onclick="login()" class="bg-indigo-600 hover:bg-indigo-700 px-5 py-2 rounded-lg font-semibold transition-all shadow-md hover:shadow-xl">
+        Login with Discord
+      </button>
     </div>
   </header>
 
   <!-- Main content -->
   <main class="flex-1 container mx-auto p-6">
-    
     <div id="dashboard" class="hidden">
-      <h2 class="text-xl md:text-2xl font-semibold mb-6 border-b border-gray-700 pb-2">Moderation Panel</h2>
+      <h2 class="text-xl md:text-2xl font-semibold mb-6 border-b border-gray-700 pb-2">Moderation Tools</h2>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
     </div>
 
     <div id="notLogged" class="text-center text-gray-400 mt-12">
-      Please log in with Discord to access moderation tools.
+      Please log in with Discord to access the moderation panel.
     </div>
-
   </main>
 
   <!-- Footer -->
-  <footer class="bg-gray-800 text-gray-400 p-4 text-center">
-    ERLC FRSP Dashboard • Private Use Only
+  <footer class="bg-gray-800 text-gray-400 p-4 text-center text-sm">
+    Moderation Dashboard • Private Staff Access Only
   </footer>
 
   <script>
@@ -45,70 +45,68 @@
     async function checkLogin() {
       try {
         const res = await fetch("/api/check-auth");
-        if(res.status === 200){
+        if (res.status === 200) {
           document.getElementById("dashboard").classList.remove("hidden");
           document.getElementById("loginBtn").style.display = "none";
           document.getElementById("notLogged").style.display = "none";
           initDashboard();
         }
-      } catch(err){
+      } catch (err) {
         console.error(err);
       }
     }
 
     function initDashboard() {
       const container = document.querySelector("#dashboard > div.grid");
-      const cards = [
-        { title: "Ban User", type: "ban", color: "red", reason: false },
-        { title: "Unban User", type: "unban", color: "green", reason: false },
-        { title: "Kick User", type: "kick", color: "yellow", reason: false },
-        { title: "Timeout User", type: "timeout", color: "purple", reason: false },
-        { title: "Remove Timeout", type: "untimeout", color: "blue", reason: false },
+      const tools = [
+        { title: "Ban User", type: "ban", color: "red", reason: true },
+        { title: "Unban User", type: "unban", color: "green" },
+        { title: "Kick User", type: "kick", color: "yellow", reason: true },
+        { title: "Timeout User", type: "timeout", color: "purple", reason: true },
+        { title: "Remove Timeout", type: "untimeout", color: "blue" },
         { title: "Warn User", type: "warn", color: "orange", reason: true },
-        { title: "Check Warnings", type: "warnings", color: "gray", reason: false },
-        { title: "Unwarn User", type: "unwarn", color: "pink", reason: false }
+        { title: "Check Warnings", type: "warnings", color: "gray" },
+        { title: "Remove Warning", type: "unwarn", color: "pink" }
       ];
 
-      cards.forEach(c => {
+      tools.forEach(tool => {
         const card = document.createElement("div");
-        card.className = `bg-gray-800 rounded-2xl p-5 shadow-lg hover:shadow-xl transition transform hover:-translate-y-1`;
-        
+        card.className = "bg-gray-800 rounded-2xl p-5 shadow-lg hover:shadow-xl transition transform hover:-translate-y-1";
+
         const title = document.createElement("h3");
-        title.className = `font-semibold text-lg mb-3 text-${c.color}-400`;
-        title.textContent = c.title;
-        
+        title.className = `font-semibold text-lg mb-3 text-${tool.color}-400`;
+        title.textContent = tool.title;
+
         const input = document.createElement("input");
         input.placeholder = "User ID";
-        input.className = "w-full p-2 mb-3 rounded text-black";
+        input.className = "w-full p-2 mb-3 rounded text-black outline-none focus:ring-2 focus:ring-indigo-500";
 
         const reasonInput = document.createElement("input");
-        reasonInput.placeholder = "Reason (if any)";
-        reasonInput.className = "w-full p-2 mb-3 rounded text-black";
-        if(!c.reason) reasonInput.style.display = "none";
+        reasonInput.placeholder = "Reason (optional)";
+        reasonInput.className = "w-full p-2 mb-3 rounded text-black outline-none focus:ring-2 focus:ring-indigo-500";
+        if (!tool.reason) reasonInput.style.display = "none";
 
         const button = document.createElement("button");
-        button.textContent = c.title.includes("Check") ? "Check" : c.title.includes("Timeout") && !c.title.includes("Remove") ? "Timeout (10m)" : c.title;
-        button.className = `w-full px-3 py-2 rounded font-semibold transition bg-${c.color}-600 hover:bg-${c.color}-700`;
+        button.textContent = tool.title;
+        button.className = `w-full px-3 py-2 rounded font-semibold transition bg-${tool.color}-600 hover:bg-${tool.color}-700`;
 
         const output = document.createElement("pre");
-        output.className = "mt-2 text-sm bg-gray-900 p-2 rounded overflow-x-auto";
-        output.style.display = "none";
+        output.className = "mt-2 text-sm bg-gray-900 p-2 rounded overflow-x-auto hidden";
 
         button.onclick = async () => {
-          const userId = input.value;
-          const reason = reasonInput.value || "";
-          if(!userId) return alert("Please enter a User ID!");
+          const userId = input.value.trim();
+          const reason = reasonInput.value.trim();
+          if (!userId) return alert("Please enter a User ID!");
 
           try {
-            if(c.type === "warnings") {
+            if (tool.type === "warnings") {
               const res = await fetch(`/api/warnings/${userId}`);
               const data = await res.json();
               output.textContent = JSON.stringify(data, null, 2);
-              output.style.display = "block";
+              output.classList.remove("hidden");
             } else {
-              const body = { userId };
-              if(c.reason) body.reason = reason;
-              const res = await fetch(`/api/${c.type}`, {
+              const body = { userId, reason };
+              const res = await fetch(`/api/${tool.type}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(body)
@@ -116,18 +114,15 @@
               const data = await res.json();
               alert(data.message);
             }
-          } catch(err) {
+          } catch (err) {
             console.error(err);
-            alert("An error occurred.");
+            alert("An error occurred while performing the action.");
           }
         };
 
-        card.appendChild(title);
-        card.appendChild(input);
-        if(c.reason) card.appendChild(reasonInput);
-        card.appendChild(button);
-        card.appendChild(output);
-
+        card.append(title, input);
+        if (tool.reason) card.append(reasonInput);
+        card.append(button, output);
         container.appendChild(card);
       });
     }
@@ -137,5 +132,3 @@
 
 </body>
 </html>
-
-
