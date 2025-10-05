@@ -14,7 +14,7 @@ const app = express();
 
 // Body parser & session
 app.use(bodyParser.json());
-app.use(session({ secret: process.env.SESSION_SECRET || "erlc-dashboard", resave: false, saveUninitialized: false }));
+app.use(session({ secret: process.env.SESSION_SECRET || "mod-dashboard", resave: false, saveUninitialized: false }));
 app.use(passport.initialize());
 app.use(passport.session());
 
