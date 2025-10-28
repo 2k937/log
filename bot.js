@@ -89,9 +89,9 @@ client.once("ready", async () => {
 
   // List of rotating statuses
   const statuses = [
-    { name: "discord.gg/fsrp0", type: 0 },   // Playing
-    { name: "Mods & Members", type: 3 },     // Watching
-    { name: "BETA Dashboard", type: 3 }      // Watching
+    { name: "dashboard builder", type: 0 },   // Playing
+    { name: "members", type: 3 },     // Watching
+    { name: "helper of server", type: 3 }      // Watching
   ];
 
   let i = 0;
