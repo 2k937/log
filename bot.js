@@ -4,7 +4,16 @@ require("dotenv").config();
 
 
 const PREFIX = "!"; // Prefix commands
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
+const client = new Client({
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent
+    ],
+    ws: { properties: { browser: 'Discord iOS' } } // 👈 This line must be inside the same object
+});
+
 
 require("./ticket.js")(client); // load ticket system
 
