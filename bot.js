@@ -16,7 +16,8 @@ const client = new Client({
 
 
 require("./ticket.js")(client); // load ticket system
-
+const AutoMod = require("./bot.js");
+AutoMod(client);
 let warnings = {};
 const WARN_FILE = "./warnings.json";
 
@@ -274,6 +275,3 @@ const reason = args.slice(1).join(" ") || "No reason";
 
 module.exports = { banUser, unbanUser, kickUser, timeoutUser, removeTimeout, warnUser, getWarnings, unwarnUser };
 client.login(process.env.TOKEN);
-
-
-
