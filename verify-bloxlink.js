@@ -53,7 +53,7 @@ module.exports = {
                 { name: "Display Name", value: displayName, inline: true },
                 { name: "Roblox ID", value: robloxId.toString(), inline: true }
             )
-            .setFooter({ text: "Verified via Bloxlink API" })
+           .setFooter({ text: `${message.guild.name} Verification` })
             .setTimestamp();
 
         // Buttons
