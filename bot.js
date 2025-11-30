@@ -11,7 +11,7 @@ const client = new Client({
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent
     ],
-    ws: { properties: { browser: 'Discord iOS' } } // 👈 This line must be inside the same object
+  
 });
 
 
