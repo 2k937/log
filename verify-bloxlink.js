@@ -21,12 +21,14 @@ module.exports = {
         });
 
         const data = await response.json();
+ if (!data || data.status !== "ok") {
+    return message.reply(
+        "❌ You are **not verified** with Bloxlink.\n\n" +
+        "To verify instantly, please use the Bloxlink website:\n" +
+        "🔗 **https://blox.link/dashboard/user/verifications/verify**"
+    );
+}
 
-        if (!data || data.status !== "ok") {
-            return message.reply(
-                "❌ You are **not verified** with Bloxlink.\nUse `!verify` in a server that has Bloxlink installed."
-            );
-        }
 
         const robloxId = data.primaryAccount;
         const robloxUsername = data.robloxUsername || "Unknown";
