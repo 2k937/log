@@ -1,22 +1,24 @@
-const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, PermissionsBitField } = require("discord.js");
+const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, PermissionsBitField } = require("discord.js");
 const fetch = require("node-fetch");
 require("dotenv").config();
 
 module.exports = {
-    name: "setup",
-    async execute(message, args, client) {
-        // Check for admin permission
-        if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-            return message.reply("❌ You need Administrator permission to use this command.");
+    data: new SlashCommandBuilder()
+        .setName("setup")
+        .setDescription("Setup the Roblox verification panel in a specific channel")
+        .addChannelOption(option =>
+            option.setName("channel")
+                .setDescription("The channel to send the verification panel")
+                .setRequired(true)
+        ),
+
+    async execute(interaction, client) {
+        if (!interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+            return interaction.reply({ content: "❌ You need Administrator permission to use this command.", ephemeral: true });
         }
 
-        // Get channel from mention or ID
-        const channel = message.mentions.channels.first() || message.guild.channels.cache.get(args[0]);
-        if (!channel) {
-            return message.reply("❌ Please mention a valid channel or provide a channel ID.");
-        }
-
-        const guild = message.guild;
+        const channel = interaction.options.getChannel("channel");
+        const guild = interaction.guild;
 
         // Create Verified role if missing
         let verifiedRole = guild.roles.cache.find(r => r.name === "Verified");
@@ -27,8 +29,8 @@ module.exports = {
                     color: "Green",
                     reason: "Created for Roblox verification system"
                 });
-            } catch (err) {
-                return message.reply("❌ Failed to create Verified role. Check my permissions.");
+            } catch {
+                return interaction.reply({ content: "❌ Failed to create Verified role. Check my permissions.", ephemeral: true });
             }
         }
 
@@ -41,8 +43,8 @@ module.exports = {
                     color: "Red",
                     reason: "Created for Roblox verification system"
                 });
-            } catch (err) {
-                return message.reply("❌ Failed to create Unverified role. Check my permissions.");
+            } catch {
+                return interaction.reply({ content: "❌ Failed to create Unverified role. Check my permissions.", ephemeral: true });
             }
         }
 
@@ -77,8 +79,7 @@ module.exports = {
         // Send the panel to the specified channel
         const panelMessage = await channel.send({ embeds: [embed], components: [row] });
 
-        // Delete the command message for cleanliness
-        await message.delete().catch(() => {});
+        await interaction.reply({ content: `✅ Verification panel sent to ${channel}`, ephemeral: true });
 
         // Collector for button interactions
         const collector = panelMessage.createMessageComponentCollector({
@@ -86,21 +87,20 @@ module.exports = {
             time: 0 // runs indefinitely
         });
 
-        collector.on("collect", async interaction => {
-            const member = interaction.member;
+        collector.on("collect", async buttonInteraction => {
+            const member = buttonInteraction.member;
 
             // Fetch Bloxlink data
             let data;
             try {
-                const response = await fetch(`https://api.blox.link/v2/user/${interaction.user.id}`, {
+                const response = await fetch(`https://api.blox.link/v2/user/${buttonInteraction.user.id}`, {
                     headers: { Authorization: process.env.BLOXLINK_API_KEY }
                 });
                 data = await response.json();
-            } catch (err) {
-                return interaction.reply({ content: "❌ Could not reach Bloxlink API.", ephemeral: true });
+            } catch {
+                return buttonInteraction.reply({ content: "❌ Could not reach Bloxlink API.", ephemeral: true });
             }
 
-            // Determine the nickname: Display name if exists, otherwise username
             const robloxUsername = data?.robloxUsername || "Unknown";
             const displayName = data?.robloxDisplayName;
             const nickname = displayName && displayName !== robloxUsername
@@ -108,55 +108,41 @@ module.exports = {
                 : robloxUsername;
 
             // VERIFY BUTTON
-            if (interaction.customId === "verify_bloxlink") {
+            if (buttonInteraction.customId === "verify_bloxlink") {
                 if (!data || data.status !== "ok" || !data.primaryAccount) {
-                    return interaction.reply({
+                    return buttonInteraction.reply({
                         content: "❌ You are not verified with Bloxlink.\n" +
                                  "Verify here: https://blox.link/dashboard/user/verifications/verify",
                         ephemeral: true
                     });
                 }
 
-                // Set nickname and assign roles
                 await member.setNickname(nickname).catch(() => {});
                 await member.roles.add(verifiedRole).catch(() => {});
                 await member.roles.remove(unverifiedRole).catch(() => {});
 
-                return interaction.reply({
-                    content: `✅ You are verified as **${nickname}** and assigned the Verified role.`,
-                    ephemeral: true
-                });
+                return buttonInteraction.reply({ content: `✅ You are verified as **${nickname}** and assigned the Verified role.`, ephemeral: true });
             }
 
             // UNVERIFY BUTTON
-            if (interaction.customId === "unverify_bloxlink") {
+            if (buttonInteraction.customId === "unverify_bloxlink") {
                 await member.setNickname(null).catch(() => {});
                 await member.roles.add(unverifiedRole).catch(() => {});
                 await member.roles.remove(verifiedRole).catch(() => {});
 
-                return interaction.reply({
-                    content: "❌ You have been unverified. Assigned the Unverified role.",
-                    ephemeral: true
-                });
+                return buttonInteraction.reply({ content: "❌ You have been unverified. Assigned the Unverified role.", ephemeral: true });
             }
 
             // UPDATE ME BUTTON
-            if (interaction.customId === "update_bloxlink") {
+            if (buttonInteraction.customId === "update_bloxlink") {
                 if (!data || data.status !== "ok" || !data.primaryAccount) {
-                    return interaction.reply({
-                        content: "❌ You are not verified with Bloxlink. Use Verify first.",
-                        ephemeral: true
-                    });
+                    return buttonInteraction.reply({ content: "❌ You are not verified with Bloxlink. Use Verify first.", ephemeral: true });
                 }
 
-                // Update nickname and roles
                 await member.setNickname(nickname).catch(() => {});
-
-                return interaction.reply({
-                    content: `🔄 Your nickname and roles have been updated to **${nickname}**`,
-                    ephemeral: true
-                });
+                return buttonInteraction.reply({ content: `🔄 Your nickname and roles have been updated to **${nickname}**`, ephemeral: true });
             }
         });
     }
 };
+
