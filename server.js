@@ -159,9 +159,11 @@ app.post("/api/unwarn", checkAuth, (req, res) => {
     res.json({ message: `Cleared warnings for ${req.body.userId}` });
 });
 
-// Start server
 const port = process.env.PORT || 3000;
-app.listen(port, () =>
-    console.log(`✅ Dashboard running at http://localhost:${port}`)
-);
+const hostURL = process.env.RENDER_EXTERNAL_URL || `http://localhost:${port}`;
+
+app.listen(port, () => {
+    console.log(`✅ Dashboard running at ${hostURL}`);
+});
+
 
