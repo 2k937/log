@@ -17,7 +17,7 @@ module.exports = (client) => {
   client.once("ready", () => {
     console.log("✅ Ticket system loaded!");
 
-    const channelId = "1431748527494664263"; // Ticket panel channel
+    const channelId = "1441185751114055906"; // Ticket panel channel
     const channel = client.channels.cache.get(channelId);
     if (channel) {
       const embed = new EmbedBuilder()
@@ -135,4 +135,5 @@ module.exports = (client) => {
     }
   });
 };
+
 
