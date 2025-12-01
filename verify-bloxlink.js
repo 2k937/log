@@ -100,6 +100,13 @@ module.exports = {
                 return interaction.reply({ content: "❌ Could not reach Bloxlink API.", ephemeral: true });
             }
 
+            // Determine the nickname: Display name if exists, otherwise username
+            const robloxUsername = data?.robloxUsername || "Unknown";
+            const displayName = data?.robloxDisplayName;
+            const nickname = displayName && displayName !== robloxUsername
+                ? `${displayName} (@${robloxUsername})`
+                : robloxUsername;
+
             // VERIFY BUTTON
             if (interaction.customId === "verify_bloxlink") {
                 if (!data || data.status !== "ok" || !data.primaryAccount) {
@@ -110,16 +117,8 @@ module.exports = {
                     });
                 }
 
-                const robloxUsername = data.robloxUsername || "Unknown";
-                const displayName = data.robloxDisplayName;
-                const nickname = displayName && displayName !== robloxUsername
-                    ? `${displayName} (@${robloxUsername})`
-                    : robloxUsername;
-
-                // Set nickname
+                // Set nickname and assign roles
                 await member.setNickname(nickname).catch(() => {});
-
-                // Assign roles
                 await member.roles.add(verifiedRole).catch(() => {});
                 await member.roles.remove(unverifiedRole).catch(() => {});
 
@@ -132,8 +131,6 @@ module.exports = {
             // UNVERIFY BUTTON
             if (interaction.customId === "unverify_bloxlink") {
                 await member.setNickname(null).catch(() => {});
-
-                // Assign roles
                 await member.roles.add(unverifiedRole).catch(() => {});
                 await member.roles.remove(verifiedRole).catch(() => {});
 
@@ -152,13 +149,7 @@ module.exports = {
                     });
                 }
 
-                const robloxUsername = data.robloxUsername || "Unknown";
-                const displayName = data.robloxDisplayName;
-                const nickname = displayName && displayName !== robloxUsername
-                    ? `${displayName} (@${robloxUsername})`
-                    : robloxUsername;
-
-                // Set nickname
+                // Update nickname and roles
                 await member.setNickname(nickname).catch(() => {});
 
                 return interaction.reply({
