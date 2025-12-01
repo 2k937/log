@@ -9,15 +9,15 @@ const {
 } = require("discord.js");
 
 // 🔹 Replace with your role IDs
-const GENERAL_ROLE_ID = "1434628519618412626"; 
-const MANAGEMENT_ROLE_ID = "1431876868742582384";
-const INTERNAL_ROLE_ID = "1432279281823649832";
+const GENERAL_ROLE_ID = ""; 
+const MANAGEMENT_ROLE_ID = "";
+const INTERNAL_ROLE_ID = "";
 
 module.exports = (client) => {
   client.once("ready", () => {
     console.log("✅ Ticket system loaded!");
 
-    const channelId = "1441185751114055906"; // Ticket panel channel
+    const channelId = ""; // Ticket panel channel
     const channel = client.channels.cache.get(channelId);
     if (channel) {
       const embed = new EmbedBuilder()
@@ -135,5 +135,6 @@ module.exports = (client) => {
     }
   });
 };
+
 
 
