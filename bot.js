@@ -18,6 +18,7 @@ const client = new Client({
 require("./ticket.js")(client); // load ticket system
 const AutoMod = require("./automod.js");
 AutoMod(client);
+require("./verifyblox.js")(client);
 let warnings = {};
 const WARN_FILE = "./warnings.json";
 
