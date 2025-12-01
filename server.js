@@ -98,4 +98,3 @@ app.post("/api/unwarn", checkAuth, (req, res) => { unwarnUser(req.body.userId); 
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log(`✅ Dashboard running at http://localhost:${port}`));
 
-require("./page.js");
