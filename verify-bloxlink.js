@@ -1,34 +1,49 @@
-const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = require("discord.js");
+const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, PermissionsBitField } = require("discord.js");
 const fetch = require("node-fetch");
 require("dotenv").config();
 
 module.exports = {
     name: "setup",
     async execute(message, args, client) {
-        if (!message.member.permissions.has("Administrator")) {
+        // Check for admin permission
+        if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
             return message.reply("❌ You need Administrator permission to use this command.");
+        }
+
+        // Get channel from mention or ID
+        const channel = message.mentions.channels.first() || message.guild.channels.cache.get(args[0]);
+        if (!channel) {
+            return message.reply("❌ Please mention a valid channel or provide a channel ID.");
         }
 
         const guild = message.guild;
 
-        // Create roles if they don't exist
+        // Create Verified role if missing
         let verifiedRole = guild.roles.cache.find(r => r.name === "Verified");
-        let unverifiedRole = guild.roles.cache.find(r => r.name === "Unverified");
-
         if (!verifiedRole) {
-            verifiedRole = await guild.roles.create({
-                name: "Verified",
-                color: "Green",
-                reason: "Created for Roblox verification system"
-            });
+            try {
+                verifiedRole = await guild.roles.create({
+                    name: "Verified",
+                    color: "Green",
+                    reason: "Created for Roblox verification system"
+                });
+            } catch (err) {
+                return message.reply("❌ Failed to create Verified role. Check my permissions.");
+            }
         }
 
+        // Create Unverified role if missing
+        let unverifiedRole = guild.roles.cache.find(r => r.name === "Unverified");
         if (!unverifiedRole) {
-            unverifiedRole = await guild.roles.create({
-                name: "Unverified",
-                color: "Red",
-                reason: "Created for Roblox verification system"
-            });
+            try {
+                unverifiedRole = await guild.roles.create({
+                    name: "Unverified",
+                    color: "Red",
+                    reason: "Created for Roblox verification system"
+                });
+            } catch (err) {
+                return message.reply("❌ Failed to create Unverified role. Check my permissions.");
+            }
         }
 
         // Embed for verification panel
@@ -43,6 +58,7 @@ module.exports = {
             .setFooter({ text: `${guild.name} Verification Panel` })
             .setTimestamp();
 
+        // Buttons row
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
                 .setCustomId("verify_bloxlink")
@@ -58,21 +74,25 @@ module.exports = {
                 .setStyle(ButtonStyle.Primary)
         );
 
-        const panelMessage = await message.channel.send({ embeds: [embed], components: [row] });
+        // Send the panel to the specified channel
+        const panelMessage = await channel.send({ embeds: [embed], components: [row] });
 
+        // Delete the command message for cleanliness
+        await message.delete().catch(() => {});
+
+        // Collector for button interactions
         const collector = panelMessage.createMessageComponentCollector({
             componentType: "BUTTON",
             time: 0 // runs indefinitely
         });
 
         collector.on("collect", async interaction => {
-            const userId = interaction.user.id;
             const member = interaction.member;
 
             // Fetch Bloxlink data
             let data;
             try {
-                const response = await fetch(`https://api.blox.link/v2/user/${userId}`, {
+                const response = await fetch(`https://api.blox.link/v2/user/${interaction.user.id}`, {
                     headers: { Authorization: process.env.BLOXLINK_API_KEY }
                 });
                 data = await response.json();
@@ -149,4 +169,3 @@ module.exports = {
         });
     }
 };
-
