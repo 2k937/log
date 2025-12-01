@@ -2,7 +2,7 @@ const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, Embed
 const fetch = require("node-fetch");
 require("dotenv").config();
 
-module.exports = {
+module.exports = async (client) => {
     data: new SlashCommandBuilder()
         .setName("setup")
         .setDescription("Setup the Roblox verification panel in a specific channel")
@@ -145,4 +145,5 @@ module.exports = {
         });
     }
 };
+
 
