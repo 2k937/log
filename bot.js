@@ -11,11 +11,12 @@ const client = new Client({
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent
     ],
-  
+    
 });
 
 
 require("./ticket.js")(client); // load ticket system
+require("./verify-bloxlink.js")(client); // load roblox verification system
 const AutoMod = require("./automod.js");
 AutoMod(client);
 let warnings = {};
@@ -99,9 +100,9 @@ client.once("ready", async () => {
 
   // List of rotating statuses
   const statuses = [
-    { name: "dashboard builder", type: 0 },   // Playing
-    { name: "members", type: 3 },     // Watching
-    { name: "helper of server", type: 3 }      // Watching
+    { name: `${s.name} Moderation`, type: 0 },   // Playing
+    { name: `over staff team`, type: 3 },     // Watching
+    { name: `over server`, type: 3 }      // Watching
   ];
 
   let i = 0;
