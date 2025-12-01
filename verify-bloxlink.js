@@ -1,93 +1,152 @@
+const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = require("discord.js");
 const fetch = require("node-fetch");
-const {
-    EmbedBuilder,
-    ActionRowBuilder,
-    ButtonBuilder,
-    ButtonStyle
-} = require("discord.js");
 require("dotenv").config();
 
 module.exports = {
-    name: "verify",
+    name: "setup",
     async execute(message, args, client) {
+        if (!message.member.permissions.has("Administrator")) {
+            return message.reply("❌ You need Administrator permission to use this command.");
+        }
 
-        if (message.author.bot) return;
+        const guild = message.guild;
 
-        const userId = message.author.id;
+        // Create roles if they don't exist
+        let verifiedRole = guild.roles.cache.find(r => r.name === "Verified");
+        let unverifiedRole = guild.roles.cache.find(r => r.name === "Unverified");
 
-        // Call Bloxlink API
-        const response = await fetch(`https://api.blox.link/v2/user/${userId}`, {
-            headers: { Authorization: process.env.BLOXLINK_API_KEY }
-        });
+        if (!verifiedRole) {
+            verifiedRole = await guild.roles.create({
+                name: "Verified",
+                color: "Green",
+                reason: "Created for Roblox verification system"
+            });
+        }
 
-        const data = await response.json();
- if (!data || data.status !== "ok") {
-    return message.reply(
-        "❌ You are **not verified** with Bloxlink.\n\n" +
-        "To verify instantly, please use the Bloxlink website:\n" +
-        "🔗 **https://blox.link/dashboard/user/verifications/verify**"
-    );
-}
+        if (!unverifiedRole) {
+            unverifiedRole = await guild.roles.create({
+                name: "Unverified",
+                color: "Red",
+                reason: "Created for Roblox verification system"
+            });
+        }
 
-
-        const robloxId = data.primaryAccount;
-        const robloxUsername = data.robloxUsername || "Unknown";
-        const displayName = data.robloxDisplayName || robloxUsername;
-
-        const profileURL = `https://www.roblox.com/users/${robloxId}/profile`;
-
-        // Roblox avatar images
-        const headshot = `https://www.roblox.com/headshot-thumbnail/image?userId=${robloxId}&width=420&height=420&format=png`;
-        const fullBody = `https://thumbnails.roblox.com/v1/users/avatar?userIds=${robloxId}&size=720x720&format=Png&isCircular=false`;
-
-        // Change nickname
-        try { await message.member.setNickname(robloxUsername).catch(() => {}); } 
-        catch (err) { console.log("Nickname error:", err); }
-
-        // Embed
+        // Embed for verification panel
         const embed = new EmbedBuilder()
-            .setColor("#00A2FF")
-            .setTitle("✅ Bloxlink Verification")
-            .setThumbnail(headshot)
-            .setImage(fullBody)
-            .addFields(
-                { name: "Roblox Username", value: robloxUsername, inline: true },
-                { name: "Display Name", value: displayName, inline: true },
-                { name: "Roblox ID", value: robloxId.toString(), inline: true }
+            .setTitle("🔹 Roblox Verification Panel")
+            .setDescription(
+                "Click **Verify** to verify your Roblox account with Bloxlink.\n" +
+                "Click **Unverify** to remove your verification.\n" +
+                "Click **Update Me** to refresh your Roblox display name, nickname, and roles."
             )
-           .setFooter({ text: `${message.guild.name} Verification` })
+            .setColor("#00A2FF")
+            .setFooter({ text: `${guild.name} Verification Panel` })
             .setTimestamp();
 
-        // Buttons
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
-                .setLabel("View Profile")
-                .setStyle(ButtonStyle.Link)
-                .setURL(profileURL),
-
+                .setCustomId("verify_bloxlink")
+                .setLabel("Verify")
+                .setStyle(ButtonStyle.Success),
             new ButtonBuilder()
-                .setCustomId(`unverify_${userId}`)
+                .setCustomId("unverify_bloxlink")
                 .setLabel("Unverify")
-                .setStyle(ButtonStyle.Danger)
+                .setStyle(ButtonStyle.Danger),
+            new ButtonBuilder()
+                .setCustomId("update_bloxlink")
+                .setLabel("Update Me")
+                .setStyle(ButtonStyle.Primary)
         );
 
-        const sentMessage = await message.reply({ embeds: [embed], components: [row] });
+        const panelMessage = await message.channel.send({ embeds: [embed], components: [row] });
 
-        // Button handler
-        const collector = sentMessage.createMessageComponentCollector({ componentType: "BUTTON", time: 15 * 60 * 1000 });
+        const collector = panelMessage.createMessageComponentCollector({
+            componentType: "BUTTON",
+            time: 0 // runs indefinitely
+        });
 
-        collector.on("collect", async (interaction) => {
-            if (interaction.user.id !== userId) {
-                return interaction.reply({ content: "❌ You cannot use someone else’s buttons.", ephemeral: true });
+        collector.on("collect", async interaction => {
+            const userId = interaction.user.id;
+            const member = interaction.member;
+
+            // Fetch Bloxlink data
+            let data;
+            try {
+                const response = await fetch(`https://api.blox.link/v2/user/${userId}`, {
+                    headers: { Authorization: process.env.BLOXLINK_API_KEY }
+                });
+                data = await response.json();
+            } catch (err) {
+                return interaction.reply({ content: "❌ Could not reach Bloxlink API.", ephemeral: true });
             }
 
-            const [action] = interaction.customId.split("_");
+            // VERIFY BUTTON
+            if (interaction.customId === "verify_bloxlink") {
+                if (!data || data.status !== "ok" || !data.primaryAccount) {
+                    return interaction.reply({
+                        content: "❌ You are not verified with Bloxlink.\n" +
+                                 "Verify here: https://blox.link/dashboard/user/verifications/verify",
+                        ephemeral: true
+                    });
+                }
 
-            if (action === "unverify") {
-                // Reset nickname
-                interaction.member.setNickname(null).catch(() => {});
-                await interaction.update({ content: "❌ You have been unverified. You can now verify a new Roblox account.", embeds: [], components: [] });
+                const robloxUsername = data.robloxUsername || "Unknown";
+                const displayName = data.robloxDisplayName;
+                const nickname = displayName && displayName !== robloxUsername
+                    ? `${displayName} (@${robloxUsername})`
+                    : robloxUsername;
+
+                // Set nickname
+                await member.setNickname(nickname).catch(() => {});
+
+                // Assign roles
+                await member.roles.add(verifiedRole).catch(() => {});
+                await member.roles.remove(unverifiedRole).catch(() => {});
+
+                return interaction.reply({
+                    content: `✅ You are verified as **${nickname}** and assigned the Verified role.`,
+                    ephemeral: true
+                });
+            }
+
+            // UNVERIFY BUTTON
+            if (interaction.customId === "unverify_bloxlink") {
+                await member.setNickname(null).catch(() => {});
+
+                // Assign roles
+                await member.roles.add(unverifiedRole).catch(() => {});
+                await member.roles.remove(verifiedRole).catch(() => {});
+
+                return interaction.reply({
+                    content: "❌ You have been unverified. Assigned the Unverified role.",
+                    ephemeral: true
+                });
+            }
+
+            // UPDATE ME BUTTON
+            if (interaction.customId === "update_bloxlink") {
+                if (!data || data.status !== "ok" || !data.primaryAccount) {
+                    return interaction.reply({
+                        content: "❌ You are not verified with Bloxlink. Use Verify first.",
+                        ephemeral: true
+                    });
+                }
+
+                const robloxUsername = data.robloxUsername || "Unknown";
+                const displayName = data.robloxDisplayName;
+                const nickname = displayName && displayName !== robloxUsername
+                    ? `${displayName} (@${robloxUsername})`
+                    : robloxUsername;
+
+                // Set nickname
+                await member.setNickname(nickname).catch(() => {});
+
+                return interaction.reply({
+                    content: `🔄 Your nickname and roles have been updated to **${nickname}**`,
+                    ephemeral: true
+                });
             }
         });
     }
 };
+
