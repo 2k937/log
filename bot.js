@@ -16,7 +16,6 @@ const client = new Client({
 
 
 require("./ticket.js")(client); // load ticket system
-require("./verify-bloxlink.js")(client); // load roblox verification system
 const AutoMod = require("./automod.js");
 AutoMod(client);
 let warnings = {};
