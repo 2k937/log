@@ -4,7 +4,7 @@
   "description": "Moderation Dashboard + Discord Bot for ERLC FRSP",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js & node page.js",
+    "start": "node server.js & npm install",
     "bot": "node bot.js",
     "dev": "nodemon server.js"
   },
