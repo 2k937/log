@@ -275,4 +275,5 @@ const reason = args.slice(1).join(" ") || "No reason";
 });
 
 module.exports = { banUser, unbanUser, kickUser, timeoutUser, removeTimeout, warnUser, getWarnings, unwarnUser };
+if (!process.env.TOKEN) throw new Error("Expected token to be set for this request, but none was present");
 client.login(process.env.TOKEN);
