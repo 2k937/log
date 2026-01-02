@@ -27,43 +27,54 @@
 
   <div id="dashboard" class="hidden space-y-10">
 
+    <!-- 📊 STATS -->
     <section>
       <h2 class="text-sm font-semibold mb-3 text-gray-300">Moderation Activity</h2>
       <canvas id="modChart" height="90"></canvas>
     </section>
 
-    <section>
-      <h2 class="text-sm font-semibold mb-3 text-gray-300">Moderation Tools</h2>
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <select id="action" class="bg-black border border-gray-700 p-2 text-sm">
-          <option value="warn">Warn</option>
-          <option value="warnings">Check Warnings</option>
-          <option value="timeout">Timeout</option>
-          <option value="untimeout">Remove Timeout</option>
-          <option value="kick">Kick</option>
-          <option value="ban">Ban</option>
-          <option value="unban">Unban</option>
-        </select>
+    <!-- 🛠️ MOD TOOLS -->
+    <section class="space-y-4">
+      <h2 class="text-sm font-semibold text-gray-300">Moderation Tools</h2>
 
-        <input id="userId" placeholder="User ID"
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <input id="userQuery"
+          placeholder="Username or User ID"
           class="bg-black border border-gray-700 p-2 text-sm">
 
-        <input id="reason" placeholder="Reason (optional)"
+        <input id="reason"
+          placeholder="Reason (optional)"
           class="bg-black border border-gray-700 p-2 text-sm">
 
-        <button onclick="runAction()"
+        <button onclick="resolveUser()"
           class="border border-white hover:bg-white hover:text-black transition text-sm">
-          Execute
+          Load User
         </button>
+      </div>
+
+      <p id="resolvedUser" class="text-xs text-gray-400 hidden"></p>
+
+      <!-- ACTION BUTTONS -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <button onclick="action('warn')" class="mod-btn">Warn</button>
+        <button onclick="action('unwarn')" class="mod-btn">Unwarn</button>
+        <button onclick="action('timeout')" class="mod-btn">Timeout</button>
+        <button onclick="action('untimeout')" class="mod-btn">Remove Timeout</button>
+        <button onclick="action('kick')" class="mod-btn">Kick</button>
+        <button onclick="action('ban')" class="mod-btn">Ban</button>
+        <button onclick="action('unban')" class="mod-btn">Unban</button>
+        <button onclick="action('warnings')" class="mod-btn">Warnings</button>
       </div>
     </section>
 
+    <!-- 🔍 SEARCH WARNINGS -->
     <section>
       <input id="searchInput" oninput="filterWarnings()"
         placeholder="Search warnings by User ID"
         class="w-full bg-black border border-gray-700 p-2 text-sm">
     </section>
 
+    <!-- 📋 WARNING TABLE -->
     <section>
       <div class="overflow-x-auto border border-gray-800">
         <table class="w-full text-sm">
@@ -94,7 +105,21 @@
   Private Staff Panel
 </footer>
 
+<style>
+.mod-btn {
+  border: 1px solid white;
+  padding: 0.5rem;
+  font-size: 0.75rem;
+  transition: all 0.15s ease;
+}
+.mod-btn:hover {
+  background: white;
+  color: black;
+}
+</style>
+
 <script>
+let resolvedUserId = null;
 let allWarnings = [];
 let chart;
 
@@ -112,54 +137,66 @@ async function checkLogin() {
   }
 }
 
-async function loadStats() {
-  const res = await fetch("/api/stats");
-  const data = await res.json();
+async function resolveUser() {
+  const query = document.getElementById("userQuery").value.trim();
+  if (!query) return alert("Enter username or ID");
 
-  chart = new Chart(document.getElementById("modChart"), {
-    type: "line",
-    data: {
-      labels: data.labels,
-      datasets: [
-        { label: "Warns", data: data.warns, borderColor: "orange", tension: 0.3 },
-        { label: "Timeouts", data: data.timeouts, borderColor: "purple", tension: 0.3 },
-        { label: "Bans", data: data.bans, borderColor: "red", tension: 0.3 }
-      ]
-    },
-    options: {
-      plugins: { legend: { labels: { color: "white" } } },
-      scales: {
-        x: { ticks: { color: "gray" } },
-        y: { ticks: { color: "gray" } }
-      }
-    }
+  const res = await fetch("/api/resolve-user", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query })
   });
+
+  const data = await res.json();
+  if (!data.id) return alert("User not found");
+
+  resolvedUserId = data.id;
+  resolvedUser.textContent = `Loaded User: ${data.username} (${data.id})`;
+  resolvedUser.classList.remove("hidden");
 }
 
-async function runAction() {
-  const action = actionSelect.value;
-  const userId = userIdInput.value.trim();
-  const reason = reasonInput.value.trim();
+async function action(type) {
+  if (!resolvedUserId) return alert("Load a user first");
 
-  if (!userId) return alert("User ID required");
-
-  if (action === "warnings") {
-    const res = await fetch(`/api/warnings/${userId}`);
+  if (type === "warnings") {
+    const res = await fetch(`/api/warnings/${resolvedUserId}`);
     const data = await res.json();
-    allWarnings = data.warnings.map(w => ({ ...w, userId }));
+    allWarnings = data.warnings.map(w => ({ ...w, userId: resolvedUserId }));
     renderTable(allWarnings);
     return;
   }
 
-  const res = await fetch(`/api/${action}`, {
+  const res = await fetch(`/api/${type}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ userId, reason })
+    body: JSON.stringify({
+      userId: resolvedUserId,
+      reason: reason.value
+    })
   });
 
   const data = await res.json();
   alert(data.message);
   loadStats();
+}
+
+async function loadStats() {
+  const res = await fetch("/api/stats");
+  const data = await res.json();
+
+  if (chart) chart.destroy();
+
+  chart = new Chart(modChart, {
+    type: "line",
+    data: {
+      labels: data.labels,
+      datasets: [
+        { label: "Warns", data: data.warns, borderColor: "orange" },
+        { label: "Timeouts", data: data.timeouts, borderColor: "purple" },
+        { label: "Bans", data: data.bans, borderColor: "red" }
+      ]
+    }
+  });
 }
 
 function renderTable(warns) {
@@ -179,10 +216,6 @@ function filterWarnings() {
   const q = searchInput.value.toLowerCase();
   renderTable(allWarnings.filter(w => w.userId.includes(q)));
 }
-
-const actionSelect = document.getElementById("action");
-const userIdInput = document.getElementById("userId");
-const searchInput = document.getElementById("searchInput");
 
 checkLogin();
 </script>
