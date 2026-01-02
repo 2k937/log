@@ -4,131 +4,188 @@
   <meta charset="UTF-8">
   <title>Moderation Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body class="bg-gray-900 text-white font-sans min-h-screen flex flex-col">
 
-  <!-- Header -->
-  <header class="bg-gray-800 shadow-md p-4">
-    <div class="container mx-auto flex justify-between items-center">
-      <div class="flex items-center gap-3">
-        <img src="https://cdn-icons-png.flaticon.com/512/942/942748.png" alt="Logo" class="w-12 h-12 rounded-full border-2 border-indigo-500">
-        <h1 class="text-2xl md:text-3xl font-bold text-indigo-400">🛠️ Moderation Dashboard</h1>
+<body class="bg-black text-white min-h-screen flex flex-col font-sans">
+
+<header class="border-b border-gray-800 p-4">
+  <div class="max-w-6xl mx-auto flex justify-between items-center">
+    <h1 class="text-lg font-semibold">Moderation Dashboard</h1>
+    <button id="loginBtn" onclick="login()"
+      class="border border-white px-4 py-1.5 text-sm hover:bg-white hover:text-black transition">
+      Login with Discord
+    </button>
+  </div>
+</header>
+
+<main class="flex-1 max-w-6xl mx-auto w-full p-6 space-y-10">
+
+  <div id="notLogged" class="text-center text-gray-500 mt-20">
+    Please log in to access moderation tools.
+  </div>
+
+  <div id="dashboard" class="hidden space-y-10">
+
+    <section>
+      <h2 class="text-sm font-semibold mb-3 text-gray-300">Moderation Activity</h2>
+      <canvas id="modChart" height="90"></canvas>
+    </section>
+
+    <section>
+      <h2 class="text-sm font-semibold mb-3 text-gray-300">Moderation Tools</h2>
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <select id="action" class="bg-black border border-gray-700 p-2 text-sm">
+          <option value="warn">Warn</option>
+          <option value="warnings">Check Warnings</option>
+          <option value="timeout">Timeout</option>
+          <option value="untimeout">Remove Timeout</option>
+          <option value="kick">Kick</option>
+          <option value="ban">Ban</option>
+          <option value="unban">Unban</option>
+        </select>
+
+        <input id="userId" placeholder="User ID"
+          class="bg-black border border-gray-700 p-2 text-sm">
+
+        <input id="reason" placeholder="Reason (optional)"
+          class="bg-black border border-gray-700 p-2 text-sm">
+
+        <button onclick="runAction()"
+          class="border border-white hover:bg-white hover:text-black transition text-sm">
+          Execute
+        </button>
       </div>
-      <button id="loginBtn" onclick="login()" class="bg-indigo-600 hover:bg-indigo-700 px-5 py-2 rounded-lg font-semibold transition-all shadow-md hover:shadow-xl">
-        Login with Discord
-      </button>
-    </div>
-  </header>
+    </section>
 
-  <!-- Main content -->
-  <main class="flex-1 container mx-auto p-6">
-    <div id="dashboard" class="hidden">
-      <h2 class="text-xl md:text-2xl font-semibold mb-6 border-b border-gray-700 pb-2">Moderation Tools</h2>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-    </div>
+    <section>
+      <input id="searchInput" oninput="filterWarnings()"
+        placeholder="Search warnings by User ID"
+        class="w-full bg-black border border-gray-700 p-2 text-sm">
+    </section>
 
-    <div id="notLogged" class="text-center text-gray-400 mt-12">
-      Please log in with Discord to access the moderation panel.
-    </div>
-  </main>
+    <section>
+      <div class="overflow-x-auto border border-gray-800">
+        <table class="w-full text-sm">
+          <thead class="border-b border-gray-800">
+            <tr>
+              <th class="p-2 text-left text-gray-400">#</th>
+              <th class="p-2 text-left text-gray-400">User ID</th>
+              <th class="p-2 text-left text-gray-400">Moderator</th>
+              <th class="p-2 text-left text-gray-400">Reason</th>
+              <th class="p-2 text-left text-gray-400">Date</th>
+            </tr>
+          </thead>
+          <tbody id="warningsTable">
+            <tr>
+              <td colspan="5" class="p-4 text-center text-gray-500">
+                No warnings loaded
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
 
-  <!-- Footer -->
-  <footer class="bg-gray-800 text-gray-400 p-4 text-center text-sm">
-    Moderation Dashboard • Private Staff Access Only
-  </footer>
+  </div>
+</main>
 
-  <script>
-    function login() {
-      window.location.href = "/auth/discord"; // Your server handles Discord OAuth
-    }
+<footer class="border-t border-gray-800 p-3 text-center text-xs text-gray-500">
+  Private Staff Panel
+</footer>
 
-    async function checkLogin() {
-      try {
-        const res = await fetch("/api/check-auth");
-        if (res.status === 200) {
-          document.getElementById("dashboard").classList.remove("hidden");
-          document.getElementById("loginBtn").style.display = "none";
-          document.getElementById("notLogged").style.display = "none";
-          initDashboard();
-        }
-      } catch (err) {
-        console.error(err);
+<script>
+let allWarnings = [];
+let chart;
+
+function login() {
+  window.location.href = "/auth/discord";
+}
+
+async function checkLogin() {
+  const res = await fetch("/api/check-auth");
+  if (res.status === 200) {
+    dashboard.classList.remove("hidden");
+    notLogged.style.display = "none";
+    loginBtn.style.display = "none";
+    loadStats();
+  }
+}
+
+async function loadStats() {
+  const res = await fetch("/api/stats");
+  const data = await res.json();
+
+  chart = new Chart(document.getElementById("modChart"), {
+    type: "line",
+    data: {
+      labels: data.labels,
+      datasets: [
+        { label: "Warns", data: data.warns, borderColor: "orange", tension: 0.3 },
+        { label: "Timeouts", data: data.timeouts, borderColor: "purple", tension: 0.3 },
+        { label: "Bans", data: data.bans, borderColor: "red", tension: 0.3 }
+      ]
+    },
+    options: {
+      plugins: { legend: { labels: { color: "white" } } },
+      scales: {
+        x: { ticks: { color: "gray" } },
+        y: { ticks: { color: "gray" } }
       }
     }
+  });
+}
 
-    function initDashboard() {
-      const container = document.querySelector("#dashboard > div.grid");
-      const tools = [
-        { title: "Ban User", type: "ban", color: "red", reason: true },
-        { title: "Unban User", type: "unban", color: "green" },
-        { title: "Kick User", type: "kick", color: "yellow", reason: true },
-        { title: "Timeout User", type: "timeout", color: "purple", reason: true },
-        { title: "Remove Timeout", type: "untimeout", color: "blue" },
-        { title: "Warn User", type: "warn", color: "orange", reason: true },
-        { title: "Check Warnings", type: "warnings", color: "gray" },
-        { title: "Remove Warning", type: "unwarn", color: "pink" }
-      ];
+async function runAction() {
+  const action = actionSelect.value;
+  const userId = userIdInput.value.trim();
+  const reason = reasonInput.value.trim();
 
-      tools.forEach(tool => {
-        const card = document.createElement("div");
-        card.className = "bg-gray-800 rounded-2xl p-5 shadow-lg hover:shadow-xl transition transform hover:-translate-y-1";
+  if (!userId) return alert("User ID required");
 
-        const title = document.createElement("h3");
-        title.className = `font-semibold text-lg mb-3 text-${tool.color}-400`;
-        title.textContent = tool.title;
+  if (action === "warnings") {
+    const res = await fetch(`/api/warnings/${userId}`);
+    const data = await res.json();
+    allWarnings = data.warnings.map(w => ({ ...w, userId }));
+    renderTable(allWarnings);
+    return;
+  }
 
-        const input = document.createElement("input");
-        input.placeholder = "User ID";
-        input.className = "w-full p-2 mb-3 rounded text-black outline-none focus:ring-2 focus:ring-indigo-500";
+  const res = await fetch(`/api/${action}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userId, reason })
+  });
 
-        const reasonInput = document.createElement("input");
-        reasonInput.placeholder = "Reason (optional)";
-        reasonInput.className = "w-full p-2 mb-3 rounded text-black outline-none focus:ring-2 focus:ring-indigo-500";
-        if (!tool.reason) reasonInput.style.display = "none";
+  const data = await res.json();
+  alert(data.message);
+  loadStats();
+}
 
-        const button = document.createElement("button");
-        button.textContent = tool.title;
-        button.className = `w-full px-3 py-2 rounded font-semibold transition bg-${tool.color}-600 hover:bg-${tool.color}-700`;
+function renderTable(warns) {
+  warningsTable.innerHTML = warns.length
+    ? warns.map((w, i) => `
+      <tr class="border-t border-gray-800">
+        <td class="p-2">${i + 1}</td>
+        <td class="p-2 font-mono text-xs">${w.userId}</td>
+        <td class="p-2">${w.moderator}</td>
+        <td class="p-2">${w.reason || "N/A"}</td>
+        <td class="p-2 text-gray-400 text-xs">${w.date}</td>
+      </tr>`).join("")
+    : `<tr><td colspan="5" class="p-4 text-center text-gray-500">No data</td></tr>`;
+}
 
-        const output = document.createElement("pre");
-        output.className = "mt-2 text-sm bg-gray-900 p-2 rounded overflow-x-auto hidden";
+function filterWarnings() {
+  const q = searchInput.value.toLowerCase();
+  renderTable(allWarnings.filter(w => w.userId.includes(q)));
+}
 
-        button.onclick = async () => {
-          const userId = input.value.trim();
-          const reason = reasonInput.value.trim();
-          if (!userId) return alert("Please enter a User ID!");
+const actionSelect = document.getElementById("action");
+const userIdInput = document.getElementById("userId");
+const searchInput = document.getElementById("searchInput");
 
-          try {
-            if (tool.type === "warnings") {
-              const res = await fetch(`/api/warnings/${userId}`);
-              const data = await res.json();
-              output.textContent = JSON.stringify(data, null, 2);
-              output.classList.remove("hidden");
-            } else {
-              const body = { userId, reason };
-              const res = await fetch(`/api/${tool.type}`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(body)
-              });
-              const data = await res.json();
-              alert(data.message);
-            }
-          } catch (err) {
-            console.error(err);
-            alert("An error occurred while performing the action.");
-          }
-        };
-
-        card.append(title, input);
-        if (tool.reason) card.append(reasonInput);
-        card.append(button, output);
-        container.appendChild(card);
-      });
-    }
-
-    checkLogin();
-  </script>
+checkLogin();
+</script>
 
 </body>
 </html>
