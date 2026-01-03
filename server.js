@@ -8,7 +8,7 @@ const fetch = require("node-fetch");
 const fs = require("fs");
 require("dotenv").config();
 
-// ADD NGROK
+// NGROK
 const ngrok = require("ngrok");
 
 const bot = require("./bot.js");
@@ -25,7 +25,7 @@ const {
 
 const app = express();
 
-/* -------------------- STATS SETUP (ADDED) -------------------- */
+/* -------------------- STATS SETUP -------------------- */
 const STATS_FILE = "./stats.json";
 if (!fs.existsSync(STATS_FILE)) {
   fs.writeFileSync(STATS_FILE, JSON.stringify({}));
@@ -42,7 +42,7 @@ function logStat(type) {
   stats[today][type]++;
   fs.writeFileSync(STATS_FILE, JSON.stringify(stats, null, 2));
 }
-/* ------------------------------------------------------------- */
+/* ----------------------------------------------------- */
 
 // Body parser & session
 app.use(bodyParser.json());
@@ -59,10 +59,8 @@ app.use(passport.session());
 passport.serializeUser((user, done) => done(null, user));
 passport.deserializeUser((obj, done) => done(null, obj));
 
-// Determine environment
-let callbackURL = process.env.CALLBACK_URL;
-
 // Discord OAuth2 Strategy
+let callbackURL = process.env.CALLBACK_URL || "http://localhost:3000/api/auth/discord/callback";
 passport.use(new DiscordStrategy({
   clientID: process.env.CLIENT_ID,
   clientSecret: process.env.CLIENT_SECRET,
@@ -113,7 +111,6 @@ async function checkAuth(req, res, next) {
 app.get("/", (req, res) =>
   res.sendFile(path.join(__dirname, "index.html"))
 );
-
 app.get("/dashboard", checkAuth, (req, res) =>
   res.sendFile(path.join(__dirname, "index.html"))
 );
@@ -180,28 +177,89 @@ app.get("/api/stats", checkAuth, (req, res) => {
   });
 });
 
+/* -------------------- RESOLVE USER ROUTE -------------------- */
+app.post("/api/resolve-user", checkAuth, async (req, res) => {
+  const { query } = req.body;
+
+  if (!query) return res.status(400).json({ error: "No query provided" });
+
+  try {
+    const guildId = process.env.GUILD_ID;
+    let userData;
+
+    // First, try fetching by user ID
+    if (/^\d+$/.test(query)) {
+      const response = await fetch(`https://discord.com/api/v10/users/${query}`, {
+        headers: { Authorization: `Bot ${process.env.TOKEN}` }
+      });
+
+      if (response.ok) {
+        userData = await response.json();
+        return res.json({ id: userData.id, username: userData.username });
+      }
+    }
+
+    // Otherwise, search guild members by username (case-insensitive)
+    const membersResp = await fetch(
+      `https://discord.com/api/v10/guilds/${guildId}/members?limit=1000`,
+      { headers: { Authorization: `Bot ${process.env.TOKEN}` } }
+    );
+    const members = await membersResp.json();
+
+    const member = members.find(
+      m => m.user.username.toLowerCase() === query.toLowerCase() ||
+           `${m.user.username}#${m.user.discriminator}`.toLowerCase() === query.toLowerCase()
+    );
+
+    if (!member) return res.json({}); // not found
+
+    userData = { id: member.user.id, username: member.user.username };
+    res.json(userData);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to resolve user" });
+  }
+});
+
 /* -------------------- START SERVER + NGROK -------------------- */
 const port = process.env.PORT || 3000;
 
-// Wrap listen in async so we can start ngrok
 (async () => {
   const server = app.listen(port, async () => {
     console.log(`✅ Dashboard running locally on port ${port}`);
 
+    // NGROK setup
     try {
-      // Start ngrok tunnel
-      const url = await ngrok.connect({
-        addr: port,
-        authtoken: process.env.NGROK_AUTH_TOKEN, // optional if you have an ngrok account
-      });
+      // Kill any leftover tunnels first
+      await ngrok.kill();
 
-      console.log(`🚀 Public random URL: ${url}`);
-      console.log(`✅ Discord OAuth callback: ${url}/api/auth/discord/callback`);
+      // Retry logic in case ngrok fails
+      let url;
+      const maxRetries = 3;
+      for (let i = 0; i < maxRetries; i++) {
+        try {
+          url = await ngrok.connect({
+            addr: port,
+            proto: "http", // HTTP tunnel
+            authtoken: process.env.NGROK_AUTH_TOKEN || undefined // optional
+          });
+          break; // success
+        } catch (err) {
+          console.warn(`⚠️ Ngrok attempt ${i + 1} failed: ${err.message || err}`);
+          if (i === maxRetries - 1) throw err; // give up after retries
+        }
+      }
 
-      // Update callbackURL for passport dynamically
-      callbackURL = `${url}/api/auth/discord/callback`;
+      console.log(`🚀 Public URL: ${url}`);
+      console.log(`✅ Discord OAuth callback: ${url}/auth/discord/callback`);
+
+      // Update callbackURL dynamically
+      callbackURL = `${url}/auth/discord/callback`;
+
     } catch (err) {
-      console.error("⚠️ Failed to start ngrok:", err);
+      console.error("⚠️ Failed to start ngrok after retries:", err.message || err);
+      console.log("ℹ️ You can still access your website locally at http://localhost:" + port);
     }
   });
 })();
