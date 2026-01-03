@@ -8,6 +8,9 @@ const fetch = require("node-fetch");
 const fs = require("fs");
 require("dotenv").config();
 
+// ADD NGROK
+const ngrok = require("ngrok");
+
 const bot = require("./bot.js");
 const {
   banUser,
@@ -57,10 +60,7 @@ passport.serializeUser((user, done) => done(null, user));
 passport.deserializeUser((obj, done) => done(null, obj));
 
 // Determine environment
-const isProduction = process.env.RENDER === "true";
-const callbackURL = isProduction
-  ? process.env.CALLBACK_URL_PROD
-  : process.env.CALLBACK_URL;
+let callbackURL = process.env.CALLBACK_URL;
 
 // Discord OAuth2 Strategy
 passport.use(new DiscordStrategy({
@@ -125,7 +125,6 @@ app.get("/api/check-auth", (req, res) => {
 });
 
 /* -------------------- MODERATION ROUTES -------------------- */
-
 app.post("/api/ban", checkAuth, async (req, res) => {
   await banUser(req.body.userId, process.env.GUILD_ID);
   logStat("ban");
@@ -181,10 +180,28 @@ app.get("/api/stats", checkAuth, (req, res) => {
   });
 });
 
-/* -------------------- START SERVER -------------------- */
+/* -------------------- START SERVER + NGROK -------------------- */
 const port = process.env.PORT || 3000;
-const hostURL = process.env.RENDER_EXTERNAL_URL || `http://localhost:${port}`;
 
-app.listen(port, () => {
-  console.log(`✅ Dashboard running at ${hostURL}`);
-});
+// Wrap listen in async so we can start ngrok
+(async () => {
+  const server = app.listen(port, async () => {
+    console.log(`✅ Dashboard running locally on port ${port}`);
+
+    try {
+      // Start ngrok tunnel
+      const url = await ngrok.connect({
+        addr: port,
+        authtoken: process.env.NGROK_AUTH_TOKEN, // optional if you have an ngrok account
+      });
+
+      console.log(`🚀 Public random URL: ${url}`);
+      console.log(`✅ Discord OAuth callback: ${url}/api/auth/discord/callback`);
+
+      // Update callbackURL for passport dynamically
+      callbackURL = `${url}/api/auth/discord/callback`;
+    } catch (err) {
+      console.error("⚠️ Failed to start ngrok:", err);
+    }
+  });
+})();
