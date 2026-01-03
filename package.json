@@ -4,7 +4,7 @@
   "description": "Moderation Dashboard + Discord Bot for ERLC FRSP",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js & npm install",
+    "start": "node server.js",
     "bot": "node bot.js",
     "dev": "nodemon server.js"
   },
@@ -25,7 +25,8 @@
     "express-session": "^1.17.3",
     "passport": "^0.7.0",
     "passport-discord": "^0.1.4",
-    "node-fetch": "^2.6.7"
+    "node-fetch": "^2.6.7",
+    "ngrok": "^5.2.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.0"
@@ -34,4 +35,3 @@
     "node": ">=18.0.0"
   }
 }
-
