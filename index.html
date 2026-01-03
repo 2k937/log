@@ -5,15 +5,45 @@
   <title>Moderation Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .glass-card {
+      background: rgba(30, 30, 30, 0.6);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .glass-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    }
+    .btn-gradient {
+      background: linear-gradient(90deg,#8b5cf6,#ec4899);
+      color: white;
+      transition: all 0.3s ease;
+    }
+    .btn-gradient:hover {
+      background: linear-gradient(90deg,#ec4899,#8b5cf6);
+      transform: scale(1.05);
+    }
+    .fade-in {
+      opacity: 0;
+      animation: fadeIn 0.7s forwards;
+    }
+    @keyframes fadeIn { to { opacity: 1; } }
+  </style>
 </head>
 
-<body class="bg-black text-white min-h-screen flex flex-col font-sans">
+<body class="bg-black text-white min-h-screen flex flex-col">
 
 <header class="border-b border-gray-800 p-4">
   <div class="max-w-6xl mx-auto flex justify-between items-center">
-    <h1 class="text-lg font-semibold">Moderation Dashboard</h1>
-    <button id="loginBtn" onclick="login()"
-      class="border border-white px-4 py-1.5 text-sm hover:bg-white hover:text-black transition">
+    <h1 class="text-xl font-semibold tracking-wide text-gradient bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 bg-clip-text text-transparent">
+      Moderation Dashboard
+    </h1>
+    <button id="loginBtn" onclick="login()" class="btn-gradient px-4 py-2 rounded-md text-sm font-medium">
       Login with Discord
     </button>
   </div>
@@ -21,81 +51,68 @@
 
 <main class="flex-1 max-w-6xl mx-auto w-full p-6 space-y-10">
 
-  <div id="notLogged" class="text-center text-gray-500 mt-20">
+  <div id="notLogged" class="text-center text-gray-400 mt-20 fade-in">
     Please log in to access moderation tools.
   </div>
 
-  <div id="dashboard" class="hidden space-y-10">
+  <div id="dashboard" class="hidden space-y-10 fade-in">
 
     <!-- 📊 STATS -->
-    <section>
-      <h2 class="text-sm font-semibold mb-3 text-gray-300">Moderation Activity</h2>
-      <canvas id="modChart" height="90"></canvas>
+    <section class="glass-card p-6">
+      <h2 class="text-sm font-semibold mb-4 text-gray-300">Moderation Activity</h2>
+      <canvas id="modChart" height="100"></canvas>
     </section>
 
     <!-- 🛠️ MOD TOOLS -->
-    <section class="space-y-4">
+    <section class="glass-card p-6 space-y-4">
       <h2 class="text-sm font-semibold text-gray-300">Moderation Tools</h2>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <input id="userQuery"
-          placeholder="Username or User ID"
-          class="bg-black border border-gray-700 p-2 text-sm">
-
-        <input id="reason"
-          placeholder="Reason (optional)"
-          class="bg-black border border-gray-700 p-2 text-sm">
-
-        <button onclick="resolveUser()"
-          class="border border-white hover:bg-white hover:text-black transition text-sm">
-          Load User
-        </button>
+        <input id="userQuery" placeholder="Username or User ID" class="bg-gray-900 border border-gray-700 p-2 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+        <input id="reason" placeholder="Reason (optional)" class="bg-gray-900 border border-gray-700 p-2 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+        <button onclick="resolveUser()" class="btn-gradient rounded-md">Load User</button>
       </div>
 
-      <p id="resolvedUser" class="text-xs text-gray-400 hidden"></p>
+      <p id="resolvedUser" class="text-xs text-gray-400 hidden mt-2"></p>
 
-      <!-- ACTION BUTTONS -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <button onclick="action('warn')" class="mod-btn">Warn</button>
-        <button onclick="action('unwarn')" class="mod-btn">Unwarn</button>
-        <button onclick="action('timeout')" class="mod-btn">Timeout</button>
-        <button onclick="action('untimeout')" class="mod-btn">Remove Timeout</button>
-        <button onclick="action('kick')" class="mod-btn">Kick</button>
-        <button onclick="action('ban')" class="mod-btn">Ban</button>
-        <button onclick="action('unban')" class="mod-btn">Unban</button>
-        <button onclick="action('warnings')" class="mod-btn">Warnings</button>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+        <button onclick="action('warn')" class="btn-gradient rounded-md">Warn</button>
+        <button onclick="action('unwarn')" class="btn-gradient rounded-md">Unwarn</button>
+        <button onclick="action('timeout')" class="btn-gradient rounded-md">Timeout</button>
+        <button onclick="action('untimeout')" class="btn-gradient rounded-md">Remove Timeout</button>
+        <button onclick="action('kick')" class="btn-gradient rounded-md">Kick</button>
+        <button onclick="action('ban')" class="btn-gradient rounded-md">Ban</button>
+        <button onclick="action('unban')" class="btn-gradient rounded-md">Unban</button>
+        <button onclick="action('warnings')" class="btn-gradient rounded-md">Warnings</button>
       </div>
     </section>
 
     <!-- 🔍 SEARCH WARNINGS -->
-    <section>
-      <input id="searchInput" oninput="filterWarnings()"
-        placeholder="Search warnings by User ID"
-        class="w-full bg-black border border-gray-700 p-2 text-sm">
+    <section class="glass-card p-4">
+      <input id="searchInput" oninput="filterWarnings()" placeholder="Search warnings by User ID"
+        class="w-full bg-gray-900 border border-gray-700 p-2 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
     </section>
 
     <!-- 📋 WARNING TABLE -->
-    <section>
-      <div class="overflow-x-auto border border-gray-800">
-        <table class="w-full text-sm">
-          <thead class="border-b border-gray-800">
-            <tr>
-              <th class="p-2 text-left text-gray-400">#</th>
-              <th class="p-2 text-left text-gray-400">User ID</th>
-              <th class="p-2 text-left text-gray-400">Moderator</th>
-              <th class="p-2 text-left text-gray-400">Reason</th>
-              <th class="p-2 text-left text-gray-400">Date</th>
-            </tr>
-          </thead>
-          <tbody id="warningsTable">
-            <tr>
-              <td colspan="5" class="p-4 text-center text-gray-500">
-                No warnings loaded
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+    <section class="glass-card p-4 overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="border-b border-gray-700">
+          <tr>
+            <th class="p-2 text-left text-gray-400">#</th>
+            <th class="p-2 text-left text-gray-400">User ID</th>
+            <th class="p-2 text-left text-gray-400">Moderator</th>
+            <th class="p-2 text-left text-gray-400">Reason</th>
+            <th class="p-2 text-left text-gray-400">Date</th>
+          </tr>
+        </thead>
+        <tbody id="warningsTable">
+          <tr>
+            <td colspan="5" class="p-4 text-center text-gray-500">
+              No warnings loaded
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </section>
 
   </div>
@@ -105,27 +122,12 @@
   Private Staff Panel
 </footer>
 
-<style>
-.mod-btn {
-  border: 1px solid white;
-  padding: 0.5rem;
-  font-size: 0.75rem;
-  transition: all 0.15s ease;
-}
-.mod-btn:hover {
-  background: white;
-  color: black;
-}
-</style>
-
 <script>
 let resolvedUserId = null;
 let allWarnings = [];
 let chart;
 
-function login() {
-  window.location.href = "/auth/discord";
-}
+function login() { window.location.href = "/auth/discord"; }
 
 async function checkLogin() {
   const res = await fetch("/api/check-auth");
@@ -169,10 +171,7 @@ async function action(type) {
   const res = await fetch(`/api/${type}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      userId: resolvedUserId,
-      reason: reason.value
-    })
+    body: JSON.stringify({ userId: resolvedUserId, reason: reason.value })
   });
 
   const data = await res.json();
@@ -183,7 +182,6 @@ async function action(type) {
 async function loadStats() {
   const res = await fetch("/api/stats");
   const data = await res.json();
-
   if (chart) chart.destroy();
 
   chart = new Chart(modChart, {
@@ -191,22 +189,23 @@ async function loadStats() {
     data: {
       labels: data.labels,
       datasets: [
-        { label: "Warns", data: data.warns, borderColor: "orange" },
-        { label: "Timeouts", data: data.timeouts, borderColor: "purple" },
-        { label: "Bans", data: data.bans, borderColor: "red" }
+        { label: "Warns", data: data.warns, borderColor: "#f97316", backgroundColor: "rgba(249,115,22,0.2)", tension: 0.4 },
+        { label: "Timeouts", data: data.timeouts, borderColor: "#a855f7", backgroundColor: "rgba(168,85,247,0.2)", tension: 0.4 },
+        { label: "Bans", data: data.bans, borderColor: "#ef4444", backgroundColor: "rgba(239,68,68,0.2)", tension: 0.4 }
       ]
-    }
+    },
+    options: { plugins: { legend: { labels: { color: 'white' } } }, scales: { x: { ticks: { color: 'white' } }, y: { ticks: { color: 'white' } } } }
   });
 }
 
 function renderTable(warns) {
   warningsTable.innerHTML = warns.length
-    ? warns.map((w, i) => `
-      <tr class="border-t border-gray-800">
-        <td class="p-2">${i + 1}</td>
+    ? warns.map((w,i)=>`
+      <tr class="border-t border-gray-700 hover:bg-gray-900 transition">
+        <td class="p-2">${i+1}</td>
         <td class="p-2 font-mono text-xs">${w.userId}</td>
         <td class="p-2">${w.moderator}</td>
-        <td class="p-2">${w.reason || "N/A"}</td>
+        <td class="p-2">${w.reason||"N/A"}</td>
         <td class="p-2 text-gray-400 text-xs">${w.date}</td>
       </tr>`).join("")
     : `<tr><td colspan="5" class="p-4 text-center text-gray-500">No data</td></tr>`;
@@ -219,6 +218,5 @@ function filterWarnings() {
 
 checkLogin();
 </script>
-
 </body>
 </html>
