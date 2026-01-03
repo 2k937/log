@@ -2,7 +2,6 @@ const { Client, GatewayIntentBits, SlashCommandBuilder, REST, Routes, EmbedBuild
 const fs = require("fs");
 require("dotenv").config();
 
-
 const PREFIX = "!"; // Prefix commands
 const client = new Client({
     intents: [
@@ -11,13 +10,12 @@ const client = new Client({
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent
     ],
-    
 });
-
 
 require("./ticket.js")(client); // load ticket system
 const AutoMod = require("./automod.js");
 AutoMod(client);
+
 let warnings = {};
 const WARN_FILE = "./warnings.json";
 
@@ -79,7 +77,7 @@ function unwarnUser(userId) {
     saveWarnings();
 }
 
-// Slash commands
+// Slash commands (fixed single declaration)
 const commands = [
     new SlashCommandBuilder().setName("ban").setDescription("Ban a user").addStringOption(o => o.setName("user").setDescription("User mention or ID").setRequired(true)),
     new SlashCommandBuilder().setName("unban").setDescription("Unban a user").addStringOption(o => o.setName("user").setDescription("User ID").setRequired(true)),
@@ -91,59 +89,59 @@ const commands = [
     new SlashCommandBuilder().setName("unwarn").setDescription("Clear warnings").addStringOption(o => o.setName("user").setDescription("User mention or ID").setRequired(true))
 ].map(c => c.toJSON());
 
-
-
-// Register slash commands and set rotating statuses
+// --- Client ready & status rotation ---
 client.once("ready", async () => {
-  console.log(`✅ Logged in as ${client.user.tag}`);
+    console.log(`✅ Logged in as ${client.user.tag}`);
+    await registerCommands(); // fixed: now using commands array
 
-  // List of rotating statuses
-  const statuses = [
-    { name: `${s.name} Moderation`, type: 0 },   // Playing
-    { name: `over staff team`, type: 3 },     // Watching
-    { name: `over server`, type: 3 }      // Watching
-  ];
+    // Rotating statuses
+    const statuses = [
+        { name: `members: support`, type: 0 },
+        { name: `over staff team`, type: 3 },
+        { name: `over server`, type: 3 }
+    ];
 
-  let i = 0;
-  setInterval(() => {
-    const status = statuses[i];
-    client.user.setActivity(status.name, { type: status.type });
-    i = (i + 1) % statuses.length; // Loop through statuses
-  }, 10000); // Change every 10 seconds
-
-  // Register slash commands
-  const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
-  try {
-    await rest.put(
-      Routes.applicationGuildCommands(client.user.id, process.env.GUILD_ID),
-      { body: commands }
-    );
-    console.log("✅ Slash commands registered");
-  } catch (error) {
-    console.error(error);
-  }
+    let i = 0;
+    setInterval(() => {
+        const status = statuses[i];
+        client.user.setActivity(status.name, { type: status.type });
+        i = (i + 1) % statuses.length;
+    }, 10000);
 });
 
-// Helper to resolve user from mention or ID
+// --- Slash command registration ---
+async function registerCommands() {
+    const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
+
+    try {
+        await rest.put(
+            Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID),
+            { body: commands }
+        );
+        console.log("✅ Slash commands registered");
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+// --- Helper: resolve user ---
 async function resolveUser(guild, str) {
     let id = str.replace(/[<@!>]/g, "");
     try { return await guild.members.fetch(id); } catch { return null; }
 }
 
-// Interaction handler
+// --- Interaction handler ---
 client.on("interactionCreate", async interaction => {
     if (!interaction.isChatInputCommand()) return;
 
-const staffRoles = [
-  process.env.STAFF_ROLE_1,
-  process.env.STAFF_ROLE_2
-];
+    const staffRoles = [
+        process.env.STAFF_ROLE_1,
+        process.env.STAFF_ROLE_2
+    ];
 
-if (!interaction.member.roles.cache.some(r => staffRoles.includes(r.id))) {
-    return interaction.reply({ content: "❌ No permission", ephemeral: true });
-}
-
-
+    if (!interaction.member.roles.cache.some(r => staffRoles.includes(r.id))) {
+        return interaction.reply({ content: "❌ No permission", ephemeral: true });
+    }
 
     const userInput = interaction.options.getString("user");
     const userMember = await resolveUser(interaction.guild, userInput);
@@ -196,28 +194,28 @@ if (!interaction.member.roles.cache.some(r => staffRoles.includes(r.id))) {
     }
 });
 
-// Prefix command support
+// --- Prefix command support ---
 client.on("messageCreate", async message => {
     if (message.author.bot || !message.content.startsWith(PREFIX)) return;
 
     const args = message.content.slice(PREFIX.length).trim().split(/ +/g);
     const cmd = args.shift().toLowerCase();
-const staffRoles = [
-  process.env.STAFF_ROLE_1,
-  process.env.STAFF_ROLE_2
-];
 
-if (!message.member.roles.cache.some(r => staffRoles.includes(r.id))) {
-    return message.channel.send("❌ You don't have permission to use this command.");
-}
+    const staffRoles = [
+        process.env.STAFF_ROLE_1,
+        process.env.STAFF_ROLE_2
+    ];
 
+    if (!message.member.roles.cache.some(r => staffRoles.includes(r.id))) {
+        return message.channel.send("❌ You don't have permission to use this command.");
+    }
 
-const targetArg = args[0];
-if (!targetArg) return message.channel.send("❌ Please provide a user mention or ID");
+    const targetArg = args[0];
+    if (!targetArg) return message.channel.send("❌ Please provide a user mention or ID");
 
-const targetId = targetArg.replace(/[<@!>]/g, ""); // safe now
-const targetMember = await resolveUser(message.guild, targetArg); // resolves mention or ID
-const reason = args.slice(1).join(" ") || "No reason";
+    const targetId = targetArg.replace(/[<@!>]/g, "");
+    const targetMember = await resolveUser(message.guild, targetArg);
+    const reason = args.slice(1).join(" ") || "No reason";
 
     const embed = new EmbedBuilder().setFooter({ text: "Made by idkk" }).setTimestamp();
 
@@ -274,5 +272,6 @@ const reason = args.slice(1).join(" ") || "No reason";
 });
 
 module.exports = { banUser, unbanUser, kickUser, timeoutUser, removeTimeout, warnUser, getWarnings, unwarnUser };
+
 if (!process.env.TOKEN) throw new Error("Expected token to be set for this request, but none was present");
 client.login(process.env.TOKEN);
