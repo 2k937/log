@@ -2,99 +2,144 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Moderation Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Moderation</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap">
   <style>
     body { font-family: 'Inter', sans-serif; }
-    .glass-card {
-      background: rgba(30, 30, 30, 0.6);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 12px;
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    
+    .glass {
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(15px);
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.1);
+      transition: all 0.3s ease;
     }
-    .glass-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    .glass:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 40px rgba(0,0,0,0.5);
     }
+
     .btn-gradient {
-      background: linear-gradient(90deg,#8b5cf6,#ec4899);
+      background: linear-gradient(90deg,#4f46e5,#ec4899);
       color: white;
+      font-weight: 600;
       transition: all 0.3s ease;
     }
     .btn-gradient:hover {
-      background: linear-gradient(90deg,#ec4899,#8b5cf6);
+      background: linear-gradient(90deg,#ec4899,#4f46e5);
       transform: scale(1.05);
     }
-    .fade-in {
-      opacity: 0;
-      animation: fadeIn 0.7s forwards;
-    }
+
+    .fade-in { opacity: 0; animation: fadeIn 0.7s forwards; }
+    .slide-in { opacity: 0; transform: translateY(20px); animation: slideIn 0.5s forwards; }
+
     @keyframes fadeIn { to { opacity: 1; } }
+    @keyframes slideIn { to { opacity: 1; transform: translateY(0); } }
+
+    .stat-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.5rem;
+      border-radius: 16px;
+      background: linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+      backdrop-filter: blur(15px);
+      border: 1px solid rgba(255,255,255,0.1);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .stat-card:hover { transform: translateY(-5px); box-shadow: 0 15px 40px rgba(0,0,0,0.5); }
+    .stat-icon { font-size: 2rem; opacity: 0.8; }
+    .stat-value { font-size: 1.75rem; font-weight: 700; }
+    .stat-label { font-size: 0.875rem; color: #aaa; }
   </style>
 </head>
+<body class="bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 text-white min-h-screen flex flex-col">
 
-<body class="bg-black text-white min-h-screen flex flex-col">
-
-<header class="border-b border-gray-800 p-4">
-  <div class="max-w-6xl mx-auto flex justify-between items-center">
-    <h1 class="text-xl font-semibold tracking-wide text-gradient bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 bg-clip-text text-transparent">
-      Moderation Dashboard
+<header class="p-6 border-b border-gray-700">
+  <div class="max-w-7xl mx-auto flex justify-between items-center">
+    <h1 class="text-3xl font-bold tracking-wide bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-pink-500 to-red-500">
+      Moderation
     </h1>
-    <button id="loginBtn" onclick="login()" class="btn-gradient px-4 py-2 rounded-md text-sm font-medium">
-      Login with Discord
-    </button>
+    <button id="loginBtn" onclick="login()" class="btn-gradient px-5 py-2 rounded-lg shadow-lg text-sm">Login with Discord</button>
   </div>
 </header>
 
-<main class="flex-1 max-w-6xl mx-auto w-full p-6 space-y-10">
+<main class="flex-1 max-w-7xl mx-auto w-full p-6 space-y-10">
 
-  <div id="notLogged" class="text-center text-gray-400 mt-20 fade-in">
+  <div id="notLogged" class="text-center text-gray-400 mt-20 fade-in text-lg">
     Please log in to access moderation tools.
   </div>
 
   <div id="dashboard" class="hidden space-y-10 fade-in">
 
-    <!-- 📊 STATS -->
-    <section class="glass-card p-6">
-      <h2 class="text-sm font-semibold mb-4 text-gray-300">Moderation Activity</h2>
+    <!-- STATS CARDS -->
+    <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="stat-card slide-in" style="animation-delay: 0.1s">
+        <div>
+          <div class="stat-value" id="warnCount">0</div>
+          <div class="stat-label">Total Warns</div>
+        </div>
+        <div class="stat-icon text-orange-400">⚠️</div>
+      </div>
+      <div class="stat-card slide-in" style="animation-delay: 0.2s">
+        <div>
+          <div class="stat-value" id="timeoutCount">0</div>
+          <div class="stat-label">Total Timeouts</div>
+        </div>
+        <div class="stat-icon text-purple-400">⏱️</div>
+      </div>
+      <div class="stat-card slide-in" style="animation-delay: 0.3s">
+        <div>
+          <div class="stat-value" id="banCount">0</div>
+          <div class="stat-label">Total Bans</div>
+        </div>
+        <div class="stat-icon text-red-500">🚫</div>
+      </div>
+    </section>
+
+    <!-- CHART -->
+    <section class="glass p-6 slide-in" style="animation-delay:0.4s">
+      <h2 class="text-lg font-semibold mb-4 text-gray-300">Moderation Activity Chart</h2>
       <canvas id="modChart" height="100"></canvas>
     </section>
 
-    <!-- 🛠️ MOD TOOLS -->
-    <section class="glass-card p-6 space-y-4">
-      <h2 class="text-sm font-semibold text-gray-300">Moderation Tools</h2>
+    <!-- MOD TOOLS -->
+    <section id="modTools" class="glass p-6 space-y-5 slide-in opacity-0">
+      <h2 class="text-lg font-semibold text-gray-300">Moderation Tools</h2>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <input id="userQuery" placeholder="Username or User ID" class="bg-gray-900 border border-gray-700 p-2 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
-        <input id="reason" placeholder="Reason (optional)" class="bg-gray-900 border border-gray-700 p-2 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
-        <button onclick="resolveUser()" class="btn-gradient rounded-md">Load User</button>
+        <input id="userQuery" placeholder="Username or User ID"
+          class="bg-gray-900 border border-gray-700 p-3 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+        <input id="reason" placeholder="Reason (optional)"
+          class="bg-gray-900 border border-gray-700 p-3 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+        <button onclick="resolveUser()" class="btn-gradient rounded-lg shadow-lg">Load User</button>
       </div>
 
       <p id="resolvedUser" class="text-xs text-gray-400 hidden mt-2"></p>
 
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
-        <button onclick="action('warn')" class="btn-gradient rounded-md">Warn</button>
-        <button onclick="action('unwarn')" class="btn-gradient rounded-md">Unwarn</button>
-        <button onclick="action('timeout')" class="btn-gradient rounded-md">Timeout</button>
-        <button onclick="action('untimeout')" class="btn-gradient rounded-md">Remove Timeout</button>
-        <button onclick="action('kick')" class="btn-gradient rounded-md">Kick</button>
-        <button onclick="action('ban')" class="btn-gradient rounded-md">Ban</button>
-        <button onclick="action('unban')" class="btn-gradient rounded-md">Unban</button>
-        <button onclick="action('warnings')" class="btn-gradient rounded-md">Warnings</button>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-5">
+        <button onclick="action('warn')" class="btn-gradient rounded-lg">Warn</button>
+        <button onclick="action('unwarn')" class="btn-gradient rounded-lg">Unwarn</button>
+        <button onclick="action('timeout')" class="btn-gradient rounded-lg">Timeout</button>
+        <button onclick="action('untimeout')" class="btn-gradient rounded-lg">Remove Timeout</button>
+        <button onclick="action('kick')" class="btn-gradient rounded-lg">Kick</button>
+        <button onclick="action('ban')" class="btn-gradient rounded-lg">Ban</button>
+        <button onclick="action('unban')" class="btn-gradient rounded-lg">Unban</button>
+        <button onclick="action('warnings')" class="btn-gradient rounded-lg">Warnings</button>
       </div>
     </section>
 
-    <!-- 🔍 SEARCH WARNINGS -->
-    <section class="glass-card p-4">
+    <!-- SEARCH -->
+    <section id="searchWarnings" class="glass p-4 slide-in opacity-0">
       <input id="searchInput" oninput="filterWarnings()" placeholder="Search warnings by User ID"
-        class="w-full bg-gray-900 border border-gray-700 p-2 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+        class="w-full bg-gray-900 border border-gray-700 p-3 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
     </section>
 
-    <!-- 📋 WARNING TABLE -->
-    <section class="glass-card p-4 overflow-x-auto">
+    <!-- WARNING TABLE -->
+    <section id="warningsTableSection" class="glass p-4 overflow-x-auto slide-in opacity-0">
       <table class="w-full text-sm">
         <thead class="border-b border-gray-700">
           <tr>
@@ -107,9 +152,7 @@
         </thead>
         <tbody id="warningsTable">
           <tr>
-            <td colspan="5" class="p-4 text-center text-gray-500">
-              No warnings loaded
-            </td>
+            <td colspan="5" class="p-4 text-center text-gray-500">No warnings loaded</td>
           </tr>
         </tbody>
       </table>
@@ -118,7 +161,7 @@
   </div>
 </main>
 
-<footer class="border-t border-gray-800 p-3 text-center text-xs text-gray-500">
+<footer class="border-t border-gray-700 p-4 text-center text-gray-500 text-xs">
   Private Staff Panel
 </footer>
 
@@ -155,6 +198,14 @@ async function resolveUser() {
   resolvedUserId = data.id;
   resolvedUser.textContent = `Loaded User: ${data.username} (${data.id})`;
   resolvedUser.classList.remove("hidden");
+
+  // Animate in moderation tools
+  document.getElementById("modTools").classList.remove("opacity-0");
+  document.getElementById("searchWarnings").classList.remove("opacity-0");
+  document.getElementById("warningsTableSection").classList.remove("opacity-0");
+  document.getElementById("modTools").classList.add("slide-in");
+  document.getElementById("searchWarnings").classList.add("slide-in");
+  document.getElementById("warningsTableSection").classList.add("slide-in");
 }
 
 async function action(type) {
@@ -182,8 +233,12 @@ async function action(type) {
 async function loadStats() {
   const res = await fetch("/api/stats");
   const data = await res.json();
-  if (chart) chart.destroy();
 
+  warnCount.textContent = data.warns.reduce((a,b)=>a+b,0);
+  timeoutCount.textContent = data.timeouts.reduce((a,b)=>a+b,0);
+  banCount.textContent = data.bans.reduce((a,b)=>a+b,0);
+
+  if (chart) chart.destroy();
   chart = new Chart(modChart, {
     type: "line",
     data: {
