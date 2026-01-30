@@ -1,7 +1,7 @@
 {
-  "name": "erlc-frsp-dashboard",
+  "name": "moderation-dashboard",
   "version": "1.0.0",
-  "description": "Moderation Dashboard + Discord Bot for ERLC FRSP",
+  "description": "Moderation Dashboard + Discord Bot",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
