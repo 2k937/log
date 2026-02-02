@@ -15,6 +15,12 @@ const client = new Client({
 require("./ticket.js")(client); // load ticket system
 const AutoMod = require("./automod.js");
 AutoMod(client);
+const commands = require('./commands.js');
+
+commands.forEach(cmd => client.commands.set(cmd.name || cmd.data.name, cmd));
+
+
+
 
 let warnings = {};
 const WARN_FILE = "./warnings.json";
