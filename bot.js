@@ -17,10 +17,28 @@ const AutoMod = require("./automod.js");
 AutoMod(client);
 const commands = require('./commands.js');
 
-commands.forEach(cmd => client.commands.set(cmd.name || cmd.data.name, cmd));
+client.commands = new Map();
 
+console.log('🔄 Loading commands...');
 
+commands.forEach(cmd => {
+  const slashName = cmd.data?.name;
+  const prefixName = cmd.name;
 
+  if (!slashName && !prefixName) return;
+
+  client.commands.set(prefixName || slashName, cmd);
+
+  if (slashName && prefixName) {
+    console.log(`✅ Loaded: /${slashName} & !${prefixName}`);
+  } else if (slashName) {
+    console.log(`✅ Loaded: /${slashName}`);
+  } else if (prefixName) {
+    console.log(`✅ Loaded: !${prefixName}`);
+  }
+});
+
+console.log(`📦 Total commands loaded: ${client.commands.size}`);
 
 let warnings = {};
 const WARN_FILE = "./warnings.json";
