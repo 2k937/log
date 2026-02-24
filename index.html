@@ -9,36 +9,41 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap">
   <style>
     body { font-family: 'Inter', sans-serif; }
-    
+
+    /* Glass cards */
     .glass {
       background: rgba(255,255,255,0.05);
-      backdrop-filter: blur(15px);
-      border-radius: 16px;
-      border: 1px solid rgba(255,255,255,0.1);
-      transition: all 0.3s ease;
+      backdrop-filter: blur(18px);
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.12);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
     .glass:hover {
       transform: translateY(-5px);
-      box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.5);
     }
 
+    /* Gradient buttons */
     .btn-gradient {
       background: linear-gradient(90deg,#4f46e5,#ec4899);
       color: white;
       font-weight: 600;
       transition: all 0.3s ease;
+      text-align: center;
     }
     .btn-gradient:hover {
       background: linear-gradient(90deg,#ec4899,#4f46e5);
       transform: scale(1.05);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.4);
     }
 
+    /* Animations */
     .fade-in { opacity: 0; animation: fadeIn 0.7s forwards; }
     .slide-in { opacity: 0; transform: translateY(20px); animation: slideIn 0.5s forwards; }
-
     @keyframes fadeIn { to { opacity: 1; } }
     @keyframes slideIn { to { opacity: 1; transform: translateY(0); } }
 
+    /* Stats card */
     .stat-card {
       display: flex;
       align-items: center;
@@ -51,9 +56,41 @@
       transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
     .stat-card:hover { transform: translateY(-5px); box-shadow: 0 15px 40px rgba(0,0,0,0.5); }
-    .stat-icon { font-size: 2rem; opacity: 0.8; }
+    .stat-icon { font-size: 2rem; opacity: 0.85; }
     .stat-value { font-size: 1.75rem; font-weight: 700; }
     .stat-label { font-size: 0.875rem; color: #aaa; }
+
+    /* Public warnings section */
+    #publicWarnings {
+      max-width: 7xl;
+      margin: 3rem auto;
+      padding: 2rem;
+      background: rgba(255,255,255,0.03);
+      backdrop-filter: blur(18px);
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.08);
+      color: #ddd;
+    }
+    #publicWarnings h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      background: linear-gradient(90deg,#4f46e5,#ec4899);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    #publicWarnings table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    #publicWarnings th, #publicWarnings td {
+      padding: 0.75rem;
+      text-align: left;
+      font-size: 0.875rem;
+    }
+    #publicWarnings th { color: #aaa; font-weight: 600; }
+    #publicWarnings tr:nth-child(even) { background: rgba(255,255,255,0.02); }
+    #publicWarnings tr:hover { background: rgba(255,255,255,0.05); }
   </style>
 </head>
 <body class="bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 text-white min-h-screen flex flex-col">
@@ -159,6 +196,30 @@
     </section>
 
   </div>
+
+  <!-- Public warnings section for non-staff -->
+  <section id="publicWarnings" class="fade-in">
+    <h2>Public Warnings</h2>
+    <input id="publicSearch" placeholder="Search by User ID" 
+      class="w-full bg-gray-900 border border-gray-700 p-3 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 mb-4" 
+      oninput="filterPublicWarnings()">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>User ID</th>
+          <th>Reason</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody id="publicWarningsTable">
+        <tr>
+          <td colspan="4" class="text-center text-gray-500">Loading...</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
 </main>
 
 <footer class="border-t border-gray-700 p-4 text-center text-gray-500 text-xs">
@@ -170,8 +231,10 @@ let resolvedUserId = null;
 let allWarnings = [];
 let chart;
 
+// Login redirect
 function login() { window.location.href = "/auth/discord"; }
 
+// Check login for staff panel
 async function checkLogin() {
   const res = await fetch("/api/check-auth");
   if (res.status === 200) {
@@ -182,6 +245,7 @@ async function checkLogin() {
   }
 }
 
+// Resolve user for mod actions
 async function resolveUser() {
   const query = document.getElementById("userQuery").value.trim();
   if (!query) return alert("Enter username or ID");
@@ -199,7 +263,6 @@ async function resolveUser() {
   resolvedUser.textContent = `Loaded User: ${data.username} (${data.id})`;
   resolvedUser.classList.remove("hidden");
 
-  // Animate in moderation tools
   document.getElementById("modTools").classList.remove("opacity-0");
   document.getElementById("searchWarnings").classList.remove("opacity-0");
   document.getElementById("warningsTableSection").classList.remove("opacity-0");
@@ -208,6 +271,7 @@ async function resolveUser() {
   document.getElementById("warningsTableSection").classList.add("slide-in");
 }
 
+// Mod actions
 async function action(type) {
   if (!resolvedUserId) return alert("Load a user first");
 
@@ -230,6 +294,7 @@ async function action(type) {
   loadStats();
 }
 
+// Load stats chart
 async function loadStats() {
   const res = await fetch("/api/stats");
   const data = await res.json();
@@ -253,6 +318,7 @@ async function loadStats() {
   });
 }
 
+// Render staff warnings table
 function renderTable(warns) {
   warningsTable.innerHTML = warns.length
     ? warns.map((w,i)=>`
@@ -266,12 +332,51 @@ function renderTable(warns) {
     : `<tr><td colspan="5" class="p-4 text-center text-gray-500">No data</td></tr>`;
 }
 
+// Filter staff warnings
 function filterWarnings() {
   const q = searchInput.value.toLowerCase();
   renderTable(allWarnings.filter(w => w.userId.includes(q)));
 }
 
+// Public warnings
+let publicWarnings = [];
+async function loadPublicWarnings() {
+  try {
+    const res = await fetch('/warnings.json');
+    const data = await res.json();
+    publicWarnings = data.warnings || [];
+    renderPublicWarnings(publicWarnings);
+  } catch(err) {
+    document.getElementById('publicWarningsTable').innerHTML =
+      '<tr><td colspan="4" class="text-center text-red-500">Failed to load warnings</td></tr>';
+    console.error(err);
+  }
+}
+
+function renderPublicWarnings(list) {
+  const tbody = document.getElementById('publicWarningsTable');
+  if (!list.length) {
+    tbody.innerHTML = '<tr><td colspan="4" class="text-center text-gray-500">No public warnings</td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map((w,i)=>`
+    <tr>
+      <td>${i+1}</td>
+      <td class="font-mono text-xs">${w.userId}</td>
+      <td>${w.reason||"N/A"}</td>
+      <td class="text-gray-400 text-xs">${w.date}</td>
+    </tr>
+  `).join('');
+}
+
+// Filter public warnings
+function filterPublicWarnings() {
+  const q = publicSearch.value.toLowerCase();
+  renderPublicWarnings(publicWarnings.filter(w => w.userId.includes(q)));
+}
+
 checkLogin();
+loadPublicWarnings();
 </script>
 </body>
 </html>
