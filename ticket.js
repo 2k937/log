@@ -11,14 +11,14 @@ const {
   TextInputStyle 
 } = require("discord.js");
 
-// 🔹 Replace with your role IDs
 const GENERAL_ROLE_ID = ""; 
 const HIGH_RANK_ROLE_ID = "";
 const PARTNERSHIP_ROLE_ID = "";
 
-// File to store ticket counters
 const fs = require("fs");
 const TICKET_COUNTER_FILE = "./ticketCounters.json";
+const PANEL_ID_FILE = "./panelMessageId.json";
+
 let ticketCounters = {};
 if (fs.existsSync(TICKET_COUNTER_FILE)) ticketCounters = JSON.parse(fs.readFileSync(TICKET_COUNTER_FILE, "utf8"));
 
@@ -26,50 +26,69 @@ function saveCounters() {
   fs.writeFileSync(TICKET_COUNTER_FILE, JSON.stringify(ticketCounters, null, 2));
 }
 
+// Track ticket owners: channelId -> userId
+const ticketOwners = {};
+
 module.exports = (client) => {
-  client.once("ready", () => {
+  client.once("ready", async () => {
     console.log("✅ Ticket system loaded!");
 
-    const panelChannelId = ""; // Ticket panel channel
+    const panelChannelId = "";
     const panelChannel = client.channels.cache.get(panelChannelId);
-    if (panelChannel) {
-      const embed = new EmbedBuilder()
-        .setTitle("🎫 Support System Hub")
-        .setDescription(
-          `Welcome to the **${panelChannel.guild.name}** assistance area! We hope our amazing staff team can help you with what you need to handle.\n` +
-          `Information about our support system is below. Any other questions of course, can be answered in a ticket!\n\n` +
-          `• **General Support**\nGeneral inquiries\nConcerns\n\n` +
-          `• **High Ranking Support**\nReport a Staff member\nReport a Member\nClaiming Prizes or Perks\nDepartment inquiries\n\n` +
-          `• **Partnership Support**\nAffiliate Questions or Concerns\nPaid Advertisement\nBasic Partnerships\n\n` +
-          `Thank you for letting us help you today! Please make sure before you partner you check our affiliation requirements!`
-        )
-        .setColor("#2b2d31");
+    if (!panelChannel) return;
 
-      const menu = new StringSelectMenuBuilder()
-        .setCustomId("ticket_select")
-        .setPlaceholder("Select a ticket type")
-        .addOptions([
-          { label: "General Support", value: "general", emoji: "💬" },
-          { label: "High Ranking Support", value: "high_rank", emoji: "🛠️" },
-          { label: "Partnership Support", value: "partnership", emoji: "⚖️" }
-        ]);
-
-      const row = new ActionRowBuilder().addComponents(menu);
-
-      panelChannel.send({ embeds: [embed], components: [row] });
+    // ✅ Bug 4 Fix: Don't re-send panel on restart
+    let existingPanelId = null;
+    if (fs.existsSync(PANEL_ID_FILE)) {
+      existingPanelId = JSON.parse(fs.readFileSync(PANEL_ID_FILE, "utf8")).messageId;
     }
+
+    if (existingPanelId) {
+      try {
+        await panelChannel.messages.fetch(existingPanelId);
+        console.log("Panel already exists, skipping send.");
+        return;
+      } catch {
+        // Message no longer exists, send a new one
+      }
+    }
+
+    const embed = new EmbedBuilder()
+      .setTitle("🎫 Support System Hub")
+      .setDescription(
+        `Welcome to the **${panelChannel.guild.name}** assistance area! We hope our amazing staff team can help you with what you need to handle.\n` +
+        `Information about our support system is below. Any other questions of course, can be answered in a ticket!\n\n` +
+        `• **General Support**\nGeneral inquiries\nConcerns\n\n` +
+        `• **High Ranking Support**\nReport a Staff member\nReport a Member\nClaiming Prizes or Perks\nDepartment inquiries\n\n` +
+        `• **Partnership Support**\nAffiliate Questions or Concerns\nPaid Advertisement\nBasic Partnerships\n\n` +
+        `Thank you for letting us help you today! Please make sure before you partner you check our affiliation requirements!`
+      )
+      .setColor("#2b2d31");
+
+    const menu = new StringSelectMenuBuilder()
+      .setCustomId("ticket_select")
+      .setPlaceholder("Select a ticket type")
+      .addOptions([
+        { label: "General Support", value: "general", emoji: "💬" },
+        { label: "High Ranking Support", value: "high_rank", emoji: "🛠️" },
+        { label: "Partnership Support", value: "partnership", emoji: "⚖️" }
+      ]);
+
+    const row = new ActionRowBuilder().addComponents(menu);
+    const sentPanel = await panelChannel.send({ embeds: [embed], components: [row] });
+
+    fs.writeFileSync(PANEL_ID_FILE, JSON.stringify({ messageId: sentPanel.id }, null, 2));
   });
 
   client.on("interactionCreate", async (interaction) => {
 
-    // --- Dropdown to open ticket ---
+    // --- Dropdown ---
     if (interaction.isStringSelectMenu() && interaction.customId === "ticket_select") {
       const ticketType = interaction.values[0];
 
-      // Open modal for user input
       const modal = new ModalBuilder()
         .setCustomId(`ticket_modal_${ticketType}`)
-        .setTitle(`🎟️ ${ticketType.replace("_"," ").toUpperCase()} Ticket Form`);
+        .setTitle(`🎟️ ${ticketType.replace(/_/g, " ").toUpperCase()} Ticket Form`);
 
       const questionInput = new TextInputBuilder()
         .setCustomId("question")
@@ -78,30 +97,31 @@ module.exports = (client) => {
         .setPlaceholder("Write the details of your request...")
         .setRequired(true);
 
-      const row = new ActionRowBuilder().addComponents(questionInput);
-      modal.addComponents(row);
-
+      modal.addComponents(new ActionRowBuilder().addComponents(questionInput));
       await interaction.showModal(modal);
     }
 
-    // --- Modal submit for ticket ---
-    if (interaction.isModalSubmit()) {
-      const ticketType = interaction.customId.split("_")[2]; // get ticket type
+    // --- Modal Submit ---
+    if (interaction.isModalSubmit() && interaction.customId.startsWith("ticket_modal_")) {
+      // ✅ Bug 1 Fix: correctly extract ticket type including underscores
+      const ticketType = interaction.customId.replace("ticket_modal_", "");
 
-      // Assign staff role
+      // ✅ Bug 2 Fix: "high_rank" not "high"
       let supportRole;
       if (ticketType === "general") supportRole = GENERAL_ROLE_ID;
-      if (ticketType === "high") supportRole = HIGH_RANK_ROLE_ID;
+      if (ticketType === "high_rank") supportRole = HIGH_RANK_ROLE_ID;
       if (ticketType === "partnership") supportRole = PARTNERSHIP_ROLE_ID;
 
-      // Increment ticket number
+      if (!supportRole) {
+        return interaction.reply({ content: "❌ Unknown ticket type.", ephemeral: true });
+      }
+
       if (!ticketCounters[ticketType]) ticketCounters[ticketType] = 1;
       else ticketCounters[ticketType]++;
       saveCounters();
 
       const ticketNumber = ticketCounters[ticketType].toString().padStart(3, "0");
-      const ticketName = `${ticketType}-${ticketNumber}`;
-
+      const ticketName = `${ticketType.replace("_", "-")}-${ticketNumber}`;
       const answer = interaction.fields.getTextInputValue("question");
 
       const channel = await interaction.guild.channels.create({
@@ -114,10 +134,13 @@ module.exports = (client) => {
         ]
       });
 
+      // ✅ Bug 3 Fix: store ticket owner so buttons reference the right person
+      ticketOwners[channel.id] = interaction.user.id;
+
       const embed = new EmbedBuilder()
         .setTitle("👋 Ticket Opened")
         .setDescription(
-          `Hello ${interaction.user},\n\n**Ticket Type:** ${ticketType.replace("_"," ").toUpperCase()}\n` +
+          `Hello ${interaction.user},\n\n**Ticket Type:** ${ticketType.replace(/_/g, " ").toUpperCase()}\n` +
           `**Server:** ${interaction.guild.name}\n\n` +
           `**Issue Details:**\n${answer}`
         )
@@ -146,28 +169,35 @@ module.exports = (client) => {
       await interaction.reply({ content: `✅ Ticket created: ${channel}`, ephemeral: true });
     }
 
-    // --- Button interactions ---
+    // --- Buttons ---
     if (interaction.isButton()) {
+      // ✅ Bug 3 Fix: use stored owner ID for open/close, not the button clicker
+      const ownerId = ticketOwners[interaction.channel.id];
+
       if (interaction.customId === "close_ticket") {
-        await interaction.channel.permissionOverwrites.edit(interaction.user.id, {
-          SendMessages: false,
-          ViewChannel: true
-        });
-        await interaction.reply({ content: "🔒 Ticket closed!", ephemeral: true });
+        if (ownerId) {
+          await interaction.channel.permissionOverwrites.edit(ownerId, {
+            SendMessages: false,
+            ViewChannel: true
+          });
+        }
+        await interaction.reply({ content: "🔒 Ticket closed!" });
       }
 
       if (interaction.customId === "open_ticket") {
-        await interaction.channel.permissionOverwrites.edit(interaction.user.id, {
-          SendMessages: true,
-          ViewChannel: true
-        });
-        await interaction.reply({ content: "✅ Ticket reopened!", ephemeral: true });
+        if (ownerId) {
+          await interaction.channel.permissionOverwrites.edit(ownerId, {
+            SendMessages: true,
+            ViewChannel: true
+          });
+        }
+        await interaction.reply({ content: "✅ Ticket reopened!" });
       }
 
       if (interaction.customId === "claim_ticket") {
         const roleIds = [GENERAL_ROLE_ID, HIGH_RANK_ROLE_ID, PARTNERSHIP_ROLE_ID];
         for (const roleId of roleIds) {
-          if (interaction.channel.permissionOverwrites.cache.has(roleId)) {
+          if (roleId && interaction.channel.permissionOverwrites.cache.has(roleId)) {
             await interaction.channel.permissionOverwrites.edit(roleId, {
               SendMessages: false,
               ViewChannel: true
@@ -183,15 +213,12 @@ module.exports = (client) => {
 
         const embedUpdate = new EmbedBuilder()
           .setTitle("🎟️ Ticket Claimed")
-          .setDescription(`This ticket has been claimed by ${interaction.user}. Only the staff team and the user can reply now.`)
+          .setDescription(`This ticket has been claimed by ${interaction.user}. Only they and the ticket owner can reply now.`)
           .setColor("#ffaa00");
 
-        await interaction.reply({ content: `✅ Ticket claimed by ${interaction.user}`, ephemeral: false });
+        await interaction.reply({ content: `✅ Ticket claimed by ${interaction.user}` });
         await interaction.channel.send({ embeds: [embedUpdate] });
       }
     }
   });
 };
-
-
-
