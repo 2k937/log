@@ -3,380 +3,1047 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Moderation</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title>⚔️ ModPanel</title>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Oxanium:wght@300;400;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap">
   <style>
-    body { font-family: 'Inter', sans-serif; }
-
-    /* Glass cards */
-    .glass {
-      background: rgba(255,255,255,0.05);
-      backdrop-filter: blur(18px);
-      border-radius: 18px;
-      border: 1px solid rgba(255,255,255,0.12);
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-    .glass:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-    }
-
-    /* Gradient buttons */
-    .btn-gradient {
-      background: linear-gradient(90deg,#4f46e5,#ec4899);
-      color: white;
-      font-weight: 600;
-      transition: all 0.3s ease;
-      text-align: center;
-    }
-    .btn-gradient:hover {
-      background: linear-gradient(90deg,#ec4899,#4f46e5);
-      transform: scale(1.05);
-      box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+    :root {
+      --bg: #050810;
+      --surface: rgba(10,15,30,0.8);
+      --surface2: rgba(15,20,40,0.9);
+      --border: rgba(100,120,255,0.15);
+      --border-glow: rgba(100,120,255,0.5);
+      --accent1: #5b6fff;
+      --accent2: #ff3e8e;
+      --accent3: #00e5ff;
+      --warn: #ffaa00;
+      --danger: #ff3e3e;
+      --success: #00e5a0;
+      --text: #d0d8ff;
+      --text-muted: #6070a0;
     }
 
-    /* Animations */
-    .fade-in { opacity: 0; animation: fadeIn 0.7s forwards; }
-    .slide-in { opacity: 0; transform: translateY(20px); animation: slideIn 0.5s forwards; }
-    @keyframes fadeIn { to { opacity: 1; } }
-    @keyframes slideIn { to { opacity: 1; transform: translateY(0); } }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
-    /* Stats card */
-    .stat-card {
+    body {
+      font-family: 'Rajdhani', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Animated background grid */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(91,111,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(91,111,255,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      z-index: 0;
+      animation: gridDrift 20s linear infinite;
+    }
+
+    @keyframes gridDrift {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(40px); }
+    }
+
+    /* Orb effects */
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(120px);
+      pointer-events: none;
+      z-index: 0;
+      animation: orbFloat 8s ease-in-out infinite;
+    }
+    .orb1 { width: 500px; height: 500px; background: rgba(91,111,255,0.08); top: -100px; left: -100px; animation-delay: 0s; }
+    .orb2 { width: 400px; height: 400px; background: rgba(255,62,142,0.07); bottom: -100px; right: -100px; animation-delay: 3s; }
+    .orb3 { width: 300px; height: 300px; background: rgba(0,229,255,0.05); top: 50%; left: 50%; transform: translate(-50%,-50%); animation-delay: 6s; }
+
+    @keyframes orbFloat {
+      0%, 100% { transform: scale(1) translateY(0); }
+      50% { transform: scale(1.1) translateY(-30px); }
+    }
+
+    /* Layout */
+    #app { position: relative; z-index: 1; }
+
+    /* Header */
+    header {
+      padding: 1.5rem 2.5rem;
+      border-bottom: 1px solid var(--border);
+      background: rgba(5,8,16,0.9);
+      backdrop-filter: blur(20px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 1.5rem;
-      border-radius: 16px;
-      background: linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
-      backdrop-filter: blur(15px);
-      border: 1px solid rgba(255,255,255,0.1);
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
-    .stat-card:hover { transform: translateY(-5px); box-shadow: 0 15px 40px rgba(0,0,0,0.5); }
-    .stat-icon { font-size: 2rem; opacity: 0.85; }
-    .stat-value { font-size: 1.75rem; font-weight: 700; }
-    .stat-label { font-size: 0.875rem; color: #aaa; }
 
-    /* Public warnings section */
-    #publicWarnings {
-      max-width: 7xl;
-      margin: 3rem auto;
-      padding: 2rem;
-      background: rgba(255,255,255,0.03);
-      backdrop-filter: blur(18px);
-      border-radius: 16px;
-      border: 1px solid rgba(255,255,255,0.08);
-      color: #ddd;
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
     }
-    #publicWarnings h2 {
+
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      position: relative;
+    }
+
+    .logo-text {
+      font-family: 'Oxanium', sans-serif;
       font-size: 1.5rem;
-      font-weight: 700;
-      margin-bottom: 1rem;
-      background: linear-gradient(90deg,#4f46e5,#ec4899);
+      font-weight: 800;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      background: linear-gradient(90deg, var(--accent1), var(--accent3));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
-    #publicWarnings table {
+
+    .logo-sub {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      margin-top: -4px;
+    }
+
+    /* Login button */
+    .btn-discord {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.65rem 1.4rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      letter-spacing: 1px;
+      transition: all 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-discord::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, var(--accent1), var(--accent2));
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .btn-discord:hover::before { opacity: 0.15; }
+    .btn-discord:hover {
+      border-color: var(--border-glow);
+      box-shadow: 0 0 25px rgba(91,111,255,0.3);
+      transform: translateY(-2px);
+    }
+    .btn-discord span { position: relative; z-index: 1; }
+
+    /* Main */
+    main {
+      max-width: 1300px;
+      margin: 0 auto;
+      padding: 2.5rem;
+    }
+
+    /* Not logged */
+    #notLogged {
+      text-align: center;
+      padding: 8rem 2rem;
+      animation: fadeUp 0.6s ease forwards;
+    }
+    #notLogged .nl-icon { margin-bottom: 1.5rem; }
+    #notLogged h2 { font-family: 'Oxanium', sans-serif; font-size: 1.8rem; font-weight: 700; margin-bottom: 0.75rem; color: var(--text); }
+    #notLogged p { color: var(--text-muted); font-size: 1rem; }
+
+    /* Animations */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes scaleIn {
+      from { opacity: 0; transform: scale(0.92); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    @keyframes slideRight {
+      from { opacity: 0; transform: translateX(-30px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    @keyframes glowPulse {
+      0%, 100% { box-shadow: 0 0 15px rgba(91,111,255,0.3); }
+      50% { box-shadow: 0 0 35px rgba(91,111,255,0.6); }
+    }
+    @keyframes numberCount {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .hidden { display: none !important; }
+
+    /* Dashboard */
+    #dashboard { animation: fadeIn 0.5s ease forwards; }
+
+    /* Stats */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.4s;
+      animation: fadeUp 0.5s ease forwards;
+      opacity: 0;
+    }
+    .stat-card::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+    }
+    .stat-card.warn { animation-delay: 0.1s; }
+    .stat-card.warn::after { background: linear-gradient(90deg, transparent, var(--warn), transparent); }
+    .stat-card.timeout { animation-delay: 0.2s; }
+    .stat-card.timeout::after { background: linear-gradient(90deg, transparent, var(--accent1), transparent); }
+    .stat-card.ban { animation-delay: 0.3s; }
+    .stat-card.ban::after { background: linear-gradient(90deg, transparent, var(--danger), transparent); }
+
+    .stat-card:hover {
+      border-color: rgba(100,120,255,0.3);
+      transform: translateY(-6px);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    }
+
+    .stat-info { z-index: 1; }
+    .stat-value {
+      font-family: 'Oxanium', sans-serif;
+      font-size: 2.8rem;
+      font-weight: 800;
+      line-height: 1;
+      animation: numberCount 0.4s ease forwards;
+    }
+    .stat-card.warn .stat-value { color: var(--warn); }
+    .stat-card.timeout .stat-value { color: var(--accent1); }
+    .stat-card.ban .stat-value { color: var(--danger); }
+
+    .stat-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-top: 0.4rem;
+    }
+    .stat-icon-wrap {
+      width: 64px;
+      height: 64px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+    }
+
+    /* Glass panel */
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.75rem;
+      margin-bottom: 1.5rem;
+      backdrop-filter: blur(20px);
+      animation: fadeUp 0.5s ease forwards;
+      opacity: 0;
+    }
+    .panel-title {
+      font-family: 'Oxanium', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .panel-title::before {
+      content: '';
+      display: inline-block;
+      width: 16px;
+      height: 2px;
+      background: var(--accent1);
+    }
+
+    /* Inputs */
+    .input-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    input[type="text"], input {
+      background: rgba(5,8,20,0.8);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.85rem 1.1rem;
+      color: var(--text);
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 500;
+      width: 100%;
+      transition: all 0.3s;
+      outline: none;
+      letter-spacing: 0.5px;
+    }
+    input:focus {
+      border-color: var(--accent1);
+      box-shadow: 0 0 0 3px rgba(91,111,255,0.15);
+      background: rgba(8,12,30,0.95);
+    }
+    input::placeholder { color: var(--text-muted); }
+
+    .btn {
+      padding: 0.85rem 1.5rem;
+      border-radius: 10px;
+      border: none;
+      font-family: 'Oxanium', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.3s;
+      position: relative;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+    .btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: white;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .btn:active::before { opacity: 0.1; }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent1), rgba(91,111,255,0.7));
+      color: white;
+      box-shadow: 0 4px 20px rgba(91,111,255,0.3);
+    }
+    .btn-primary:hover { box-shadow: 0 6px 30px rgba(91,111,255,0.5); transform: translateY(-2px); }
+
+    /* Resolved user */
+    #resolvedUser {
+      margin-top: 1rem;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      background: rgba(0,229,160,0.06);
+      border: 1px solid rgba(0,229,160,0.2);
+      font-size: 0.85rem;
+      color: var(--success);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      animation: slideRight 0.3s ease forwards;
+    }
+
+    /* Action buttons grid */
+    .actions-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.875rem;
+      margin-top: 1.25rem;
+    }
+
+    .action-btn {
+      padding: 1rem;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text);
+      font-family: 'Oxanium', sans-serif;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.6rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .action-btn:hover {
+      transform: translateY(-4px);
+      border-color: var(--border-glow);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    }
+    .action-btn.warn-btn:hover { border-color: var(--warn); box-shadow: 0 10px 30px rgba(255,170,0,0.2); }
+    .action-btn.ban-btn:hover { border-color: var(--danger); box-shadow: 0 10px 30px rgba(255,62,62,0.2); }
+    .action-btn.success-btn:hover { border-color: var(--success); box-shadow: 0 10px 30px rgba(0,229,160,0.2); }
+    .action-btn.info-btn:hover { border-color: var(--accent3); box-shadow: 0 10px 30px rgba(0,229,255,0.2); }
+
+    /* Table */
+    .table-wrap {
+      overflow-x: auto;
+    }
+    table {
       width: 100%;
       border-collapse: collapse;
     }
-    #publicWarnings th, #publicWarnings td {
-      padding: 0.75rem;
-      text-align: left;
-      font-size: 0.875rem;
+    thead tr {
+      border-bottom: 1px solid var(--border);
     }
-    #publicWarnings th { color: #aaa; font-weight: 600; }
-    #publicWarnings tr:nth-child(even) { background: rgba(255,255,255,0.02); }
-    #publicWarnings tr:hover { background: rgba(255,255,255,0.05); }
+    th {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      font-family: 'Oxanium', sans-serif;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+    td {
+      padding: 0.9rem 1rem;
+      font-size: 0.9rem;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+      transition: background 0.2s;
+    }
+    tr:hover td { background: rgba(91,111,255,0.04); }
+    .mono { font-family: 'Courier New', monospace; font-size: 0.78rem; color: var(--accent3); }
+
+    /* Chart */
+    #chartPanel { animation-delay: 0.4s; }
+    #modChart { max-height: 280px; }
+
+    /* Public section */
+    #publicWarnings {
+      animation: fadeUp 0.7s ease 0.2s forwards;
+      opacity: 0;
+    }
+
+    /* Search input */
+    .search-wrap {
+      position: relative;
+      margin-bottom: 1.25rem;
+    }
+    .search-wrap input { padding-left: 2.8rem; }
+    .search-icon {
+      position: absolute;
+      left: 0.9rem;
+      top: 50%;
+      transform: translateY(-50%);
+      opacity: 0.4;
+    }
+
+    /* Status badge */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.2rem 0.6rem;
+      border-radius: 6px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .badge-warn { background: rgba(255,170,0,0.1); color: var(--warn); border: 1px solid rgba(255,170,0,0.2); }
+
+    /* Divider */
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border), transparent);
+      margin: 2rem 0;
+    }
+
+    /* Loading spinner */
+    .spinner {
+      width: 20px; height: 20px;
+      border: 2px solid rgba(91,111,255,0.2);
+      border-top-color: var(--accent1);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      display: inline-block;
+    }
+
+    /* Tooltip */
+    .tooltip-row { position: relative; }
+
+    /* Notification toast */
+    #toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1rem 1.5rem;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      backdrop-filter: blur(20px);
+      font-size: 0.9rem;
+      font-weight: 600;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      max-width: 350px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+    #toast.show { transform: translateY(0); opacity: 1; }
+    #toast.success { border-color: rgba(0,229,160,0.3); }
+    #toast.error { border-color: rgba(255,62,62,0.3); }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .stats-grid { grid-template-columns: 1fr; }
+      .actions-grid { grid-template-columns: repeat(2, 1fr); }
+      .input-row { grid-template-columns: 1fr; }
+      main { padding: 1.25rem; }
+    }
+
+    /* Scanline effect */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+      pointer-events: none;
+      z-index: 9999;
+    }
   </style>
 </head>
-<body class="bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 text-white min-h-screen flex flex-col">
+<body>
+  <!-- Background orbs -->
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="orb orb3"></div>
 
-<header class="p-6 border-b border-gray-700">
-  <div class="max-w-7xl mx-auto flex justify-between items-center">
-    <h1 class="text-3xl font-bold tracking-wide bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-pink-500 to-red-500">
-      Moderation
-    </h1>
-    <button id="loginBtn" onclick="login()" class="btn-gradient px-5 py-2 rounded-lg shadow-lg text-sm">Login with Discord</button>
-  </div>
-</header>
-
-<main class="flex-1 max-w-7xl mx-auto w-full p-6 space-y-10">
-
-  <div id="notLogged" class="text-center text-gray-400 mt-20 fade-in text-lg">
-    Please log in to access moderation tools.
+  <!-- Toast notification -->
+  <div id="toast">
+    <span id="toastIcon"></span>
+    <span id="toastMsg"></span>
   </div>
 
-  <div id="dashboard" class="hidden space-y-10 fade-in">
-
-    <!-- STATS CARDS -->
-    <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <div class="stat-card slide-in" style="animation-delay: 0.1s">
+  <div id="app">
+    <header>
+      <div class="logo">
+        <!-- Custom SVG sword shield logo -->
+        <svg class="logo-icon" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 2L32 8V22C32 29 26 35 20 38C14 35 8 29 8 22V8L20 2Z" fill="rgba(91,111,255,0.1)" stroke="url(#logoGrad)" stroke-width="1.5"/>
+          <path d="M20 8V28M14 14H26" stroke="url(#logoGrad2)" stroke-width="2" stroke-linecap="round"/>
+          <path d="M14 28L20 22L26 28" stroke="url(#logoGrad2)" stroke-width="1.5" stroke-linecap="round"/>
+          <defs>
+            <linearGradient id="logoGrad" x1="8" y1="2" x2="32" y2="38" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#5b6fff"/>
+              <stop offset="1" stop-color="#00e5ff"/>
+            </linearGradient>
+            <linearGradient id="logoGrad2" x1="14" y1="8" x2="26" y2="28" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#5b6fff"/>
+              <stop offset="1" stop-color="#00e5ff"/>
+            </linearGradient>
+          </defs>
+        </svg>
         <div>
-          <div class="stat-value" id="warnCount">0</div>
-          <div class="stat-label">Total Warns</div>
+          <div class="logo-text">ModPanel</div>
+          <div class="logo-sub">Staff Command Center</div>
         </div>
-        <div class="stat-icon text-orange-400">⚠️</div>
       </div>
-      <div class="stat-card slide-in" style="animation-delay: 0.2s">
-        <div>
-          <div class="stat-value" id="timeoutCount">0</div>
-          <div class="stat-label">Total Timeouts</div>
+
+      <button id="loginBtn" onclick="login()" class="btn-discord">
+        <!-- Custom Discord SVG -->
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="opacity:0.8">
+          <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/>
+        </svg>
+        <span>Login via Discord</span>
+      </button>
+    </header>
+
+    <main>
+      <!-- Not logged state -->
+      <div id="notLogged">
+        <div class="nl-icon">
+          <!-- Custom lock SVG emoji -->
+          <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="40" cy="40" r="38" fill="rgba(91,111,255,0.06)" stroke="rgba(91,111,255,0.2)" stroke-width="1"/>
+            <rect x="24" y="38" width="32" height="22" rx="4" fill="rgba(91,111,255,0.15)" stroke="rgba(91,111,255,0.4)" stroke-width="1.5"/>
+            <path d="M30 38V30C30 23.373 50 23.373 50 30V38" stroke="rgba(91,111,255,0.6)" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="40" cy="50" r="4" fill="rgba(91,111,255,0.6)"/>
+            <rect x="38.5" y="50" width="3" height="5" rx="1" fill="rgba(91,111,255,0.6)"/>
+          </svg>
         </div>
-        <div class="stat-icon text-purple-400">⏱️</div>
+        <h2>Staff Access Required</h2>
+        <p>Authenticate with Discord to access the moderation panel</p>
       </div>
-      <div class="stat-card slide-in" style="animation-delay: 0.3s">
-        <div>
-          <div class="stat-value" id="banCount">0</div>
-          <div class="stat-label">Total Bans</div>
+
+      <!-- Dashboard (hidden until logged in) -->
+      <div id="dashboard" class="hidden">
+
+        <!-- Stats -->
+        <div class="stats-grid">
+          <div class="stat-card warn">
+            <div class="stat-info">
+              <div class="stat-value" id="warnCount">0</div>
+              <div class="stat-label">Total Warns</div>
+            </div>
+            <div class="stat-icon-wrap">
+              <!-- Custom warning icon -->
+              <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                <path d="M16 4L28 26H4L16 4Z" fill="rgba(255,170,0,0.1)" stroke="#ffaa00" stroke-width="1.5" stroke-linejoin="round"/>
+                <rect x="15" y="13" width="2" height="7" rx="1" fill="#ffaa00"/>
+                <circle cx="16" cy="23" r="1.2" fill="#ffaa00"/>
+              </svg>
+            </div>
+          </div>
+
+          <div class="stat-card timeout">
+            <div class="stat-info">
+              <div class="stat-value" id="timeoutCount">0</div>
+              <div class="stat-label">Total Timeouts</div>
+            </div>
+            <div class="stat-icon-wrap">
+              <!-- Custom clock icon -->
+              <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                <circle cx="16" cy="16" r="11" fill="rgba(91,111,255,0.1)" stroke="#5b6fff" stroke-width="1.5"/>
+                <path d="M16 9V16L20 20" stroke="#5b6fff" stroke-width="2" stroke-linecap="round"/>
+                <circle cx="16" cy="16" r="1.5" fill="#5b6fff"/>
+              </svg>
+            </div>
+          </div>
+
+          <div class="stat-card ban">
+            <div class="stat-info">
+              <div class="stat-value" id="banCount">0</div>
+              <div class="stat-label">Total Bans</div>
+            </div>
+            <div class="stat-icon-wrap">
+              <!-- Custom ban icon -->
+              <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                <circle cx="16" cy="16" r="11" fill="rgba(255,62,62,0.1)" stroke="#ff3e3e" stroke-width="1.5"/>
+                <path d="M8 8L24 24" stroke="#ff3e3e" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+          </div>
         </div>
-        <div class="stat-icon text-red-500">🚫</div>
+
+        <!-- Chart -->
+        <div class="panel" id="chartPanel" style="animation-delay:0.35s">
+          <div class="panel-title">
+            <!-- chart icon -->
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="opacity:0.6">
+              <rect x="1" y="7" width="2.5" height="6" rx="0.5" fill="#5b6fff"/>
+              <rect x="5.25" y="4" width="2.5" height="9" rx="0.5" fill="#5b6fff"/>
+              <rect x="9.5" y="1" width="2.5" height="12" rx="0.5" fill="#5b6fff"/>
+            </svg>
+            Activity Overview
+          </div>
+          <canvas id="modChart"></canvas>
+        </div>
+
+        <!-- Mod Tools -->
+        <div class="panel" id="modToolsPanel" style="animation-delay:0.45s">
+          <div class="panel-title">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="opacity:0.6">
+              <path d="M2 2L7 7L2 12" stroke="#5b6fff" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M7 12H12" stroke="#5b6fff" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            Moderation Tools
+          </div>
+
+          <div class="input-row">
+            <input id="userQuery" type="text" placeholder="Username or User ID…">
+            <input id="reason" type="text" placeholder="Reason (optional)…">
+            <button onclick="resolveUser()" class="btn btn-primary" style="white-space:nowrap">
+              Load User
+            </button>
+          </div>
+
+          <div id="resolvedUser" class="hidden">
+            <!-- check icon -->
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <circle cx="7" cy="7" r="6" fill="rgba(0,229,160,0.1)" stroke="#00e5a0" stroke-width="1.2"/>
+              <path d="M4 7L6 9L10 5" stroke="#00e5a0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span id="resolvedText">User loaded</span>
+          </div>
+
+          <div class="actions-grid">
+            <button onclick="action('warn')" class="action-btn warn-btn">
+              <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+                <path d="M13 3L23 21H3L13 3Z" fill="rgba(255,170,0,0.1)" stroke="#ffaa00" stroke-width="1.5"/>
+                <rect x="12" y="10" width="2" height="5.5" rx="1" fill="#ffaa00"/>
+                <circle cx="13" cy="18" r="1" fill="#ffaa00"/>
+              </svg>
+              Warn
+            </button>
+
+            <button onclick="action('unwarn')" class="action-btn success-btn">
+              <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+                <path d="M13 3L23 21H3L13 3Z" fill="rgba(0,229,160,0.08)" stroke="#00e5a0" stroke-width="1.5"/>
+                <path d="M9 13L11.5 16L17 10" stroke="#00e5a0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Unwarn
+            </button>
+
+            <button onclick="action('timeout')" class="action-btn">
+              <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+                <circle cx="13" cy="13" r="9" fill="rgba(91,111,255,0.08)" stroke="#5b6fff" stroke-width="1.5"/>
+                <path d="M13 7V13L17 17" stroke="#5b6fff" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+              Timeout
+            </button>
+
+            <button onclick="action('untimeout')" class="action-btn success-btn">
+              <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+                <circle cx="13" cy="13" r="9" fill="rgba(0,229,160,0.08)" stroke="#00e5a0" stroke-width="1.5"/>
+                <path d="M9 13L12 16L17 10" stroke="#00e5a0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Untimeout
+            </button>
+
+            <button onclick="action('kick')" class="action-btn warn-btn">
+              <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+                <circle cx="11" cy="9" r="4" fill="rgba(255,170,0,0.08)" stroke="#ffaa00" stroke-width="1.5"/>
+                <path d="M5 22C5 18.134 7.686 15 11 15" stroke="#ffaa00" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M19 15L22 18M22 18L19 21M22 18H15" stroke="#ffaa00" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Kick
+            </button>
+
+            <button onclick="action('ban')" class="action-btn ban-btn">
+              <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+                <circle cx="13" cy="13" r="9" fill="rgba(255,62,62,0.08)" stroke="#ff3e3e" stroke-width="1.5"/>
+                <path d="M7 7L19 19" stroke="#ff3e3e" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+              Ban
+            </button>
+
+            <button onclick="action('unban')" class="action-btn success-btn">
+              <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+                <circle cx="13" cy="13" r="9" fill="rgba(0,229,160,0.08)" stroke="#00e5a0" stroke-width="1.5"/>
+                <path d="M9 13L11.5 16L17 10" stroke="#00e5a0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Unban
+            </button>
+
+            <button onclick="action('warnings')" class="action-btn info-btn">
+              <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+                <rect x="4" y="4" width="18" height="18" rx="3" fill="rgba(0,229,255,0.08)" stroke="#00e5ff" stroke-width="1.5"/>
+                <path d="M8 10H18M8 14H15M8 18H12" stroke="#00e5ff" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+              Warnings
+            </button>
+          </div>
+        </div>
+
+        <!-- Search + Table (Staff) -->
+        <div class="panel" style="animation-delay:0.55s">
+          <div class="panel-title">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="opacity:0.6">
+              <circle cx="6" cy="6" r="4.5" stroke="#5b6fff" stroke-width="1.2"/>
+              <path d="M9.5 9.5L12.5 12.5" stroke="#5b6fff" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            Warning Records
+          </div>
+          <div class="search-wrap">
+            <svg class="search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <circle cx="7" cy="7" r="5" stroke="#6070a0" stroke-width="1.5"/>
+              <path d="M11 11L14 14" stroke="#6070a0" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            <input id="searchInput" oninput="filterWarnings()" placeholder="Search by User ID…" style="padding-left:2.8rem">
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>User ID</th>
+                  <th>Moderator</th>
+                  <th>Reason</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody id="warningsTable">
+                <tr><td colspan="5" style="color:var(--text-muted);text-align:center;padding:2rem">No warnings loaded</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
-    </section>
 
-    <!-- CHART -->
-    <section class="glass p-6 slide-in" style="animation-delay:0.4s">
-      <h2 class="text-lg font-semibold mb-4 text-gray-300">Moderation Activity Chart</h2>
-      <canvas id="modChart" height="100"></canvas>
-    </section>
+      <div class="divider"></div>
 
-    <!-- MOD TOOLS -->
-    <section id="modTools" class="glass p-6 space-y-5 slide-in opacity-0">
-      <h2 class="text-lg font-semibold text-gray-300">Moderation Tools</h2>
-
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <input id="userQuery" placeholder="Username or User ID"
-          class="bg-gray-900 border border-gray-700 p-3 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
-        <input id="reason" placeholder="Reason (optional)"
-          class="bg-gray-900 border border-gray-700 p-3 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
-        <button onclick="resolveUser()" class="btn-gradient rounded-lg shadow-lg">Load User</button>
+      <!-- Public Warnings -->
+      <div id="publicWarnings">
+        <div class="panel" style="animation-delay:0.1s; opacity:1">
+          <div class="panel-title">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="opacity:0.6">
+              <circle cx="7" cy="5" r="3" stroke="#5b6fff" stroke-width="1.2"/>
+              <path d="M2 13C2 10.239 4.239 8 7 8s5 2.239 5 5" stroke="#5b6fff" stroke-width="1.2" stroke-linecap="round"/>
+            </svg>
+            Public Warning Log
+          </div>
+          <div class="search-wrap">
+            <svg class="search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <circle cx="7" cy="7" r="5" stroke="#6070a0" stroke-width="1.5"/>
+              <path d="M11 11L14 14" stroke="#6070a0" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            <input id="publicSearch" placeholder="Search by User ID…" oninput="filterPublicWarnings()" style="padding-left:2.8rem">
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>User ID</th>
+                  <th>Reason</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody id="publicWarningsTable">
+                <tr><td colspan="4" style="color:var(--text-muted);text-align:center;padding:2rem">
+                  <span class="spinner"></span>
+                </td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
-      <p id="resolvedUser" class="text-xs text-gray-400 hidden mt-2"></p>
+    </main>
 
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-5">
-        <button onclick="action('warn')" class="btn-gradient rounded-lg">Warn</button>
-        <button onclick="action('unwarn')" class="btn-gradient rounded-lg">Unwarn</button>
-        <button onclick="action('timeout')" class="btn-gradient rounded-lg">Timeout</button>
-        <button onclick="action('untimeout')" class="btn-gradient rounded-lg">Remove Timeout</button>
-        <button onclick="action('kick')" class="btn-gradient rounded-lg">Kick</button>
-        <button onclick="action('ban')" class="btn-gradient rounded-lg">Ban</button>
-        <button onclick="action('unban')" class="btn-gradient rounded-lg">Unban</button>
-        <button onclick="action('warnings')" class="btn-gradient rounded-lg">Warnings</button>
-      </div>
-    </section>
-
-    <!-- SEARCH -->
-    <section id="searchWarnings" class="glass p-4 slide-in opacity-0">
-      <input id="searchInput" oninput="filterWarnings()" placeholder="Search warnings by User ID"
-        class="w-full bg-gray-900 border border-gray-700 p-3 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
-    </section>
-
-    <!-- WARNING TABLE -->
-    <section id="warningsTableSection" class="glass p-4 overflow-x-auto slide-in opacity-0">
-      <table class="w-full text-sm">
-        <thead class="border-b border-gray-700">
-          <tr>
-            <th class="p-2 text-left text-gray-400">#</th>
-            <th class="p-2 text-left text-gray-400">User ID</th>
-            <th class="p-2 text-left text-gray-400">Moderator</th>
-            <th class="p-2 text-left text-gray-400">Reason</th>
-            <th class="p-2 text-left text-gray-400">Date</th>
-          </tr>
-        </thead>
-        <tbody id="warningsTable">
-          <tr>
-            <td colspan="5" class="p-4 text-center text-gray-500">No warnings loaded</td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
-
+    <footer style="padding:1.5rem 2.5rem;border-top:1px solid var(--border);text-align:center;font-size:0.75rem;color:var(--text-muted);letter-spacing:2px;text-transform:uppercase;">
+      Private Staff Panel &nbsp;·&nbsp; ModPanel v2
+    </footer>
   </div>
 
-  <!-- Public warnings section for non-staff -->
-  <section id="publicWarnings" class="fade-in">
-    <h2>Public Warnings</h2>
-    <input id="publicSearch" placeholder="Search by User ID" 
-      class="w-full bg-gray-900 border border-gray-700 p-3 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 mb-4" 
-      oninput="filterPublicWarnings()">
-    <table>
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>User ID</th>
-          <th>Reason</th>
-          <th>Date</th>
-        </tr>
-      </thead>
-      <tbody id="publicWarningsTable">
-        <tr>
-          <td colspan="4" class="text-center text-gray-500">Loading...</td>
-        </tr>
-      </tbody>
-    </table>
-  </section>
+  <script>
+    let resolvedUserId = null;
+    let allWarnings = [];
+    let chart;
 
-</main>
+    function login() { window.location.href = "/auth/discord"; }
 
-<footer class="border-t border-gray-700 p-4 text-center text-gray-500 text-xs">
-  Private Staff Panel
-</footer>
+    function showToast(msg, type = 'success') {
+      const t = document.getElementById('toast');
+      const icons = {
+        success: `<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="8" fill="rgba(0,229,160,0.1)" stroke="#00e5a0" stroke-width="1.2"/><path d="M5.5 9L7.5 11L12.5 6.5" stroke="#00e5a0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+        error: `<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="8" fill="rgba(255,62,62,0.1)" stroke="#ff3e3e" stroke-width="1.2"/><path d="M6 6L12 12M12 6L6 12" stroke="#ff3e3e" stroke-width="1.5" stroke-linecap="round"/></svg>`
+      };
+      document.getElementById('toastIcon').innerHTML = icons[type] || icons.success;
+      document.getElementById('toastMsg').textContent = msg;
+      t.className = `show ${type}`;
+      setTimeout(() => t.className = '', 3500);
+    }
 
-<script>
-let resolvedUserId = null;
-let allWarnings = [];
-let chart;
+    async function checkLogin() {
+      try {
+        const res = await fetch("/api/check-auth");
+        if (res.status === 200) {
+          document.getElementById('dashboard').classList.remove("hidden");
+          document.getElementById('notLogged').style.display = "none";
+          document.getElementById('loginBtn').style.display = "none";
+          loadStats();
+        }
+      } catch(e) {}
+    }
 
-// Login redirect
-function login() { window.location.href = "/auth/discord"; }
+    async function resolveUser() {
+      const query = document.getElementById("userQuery").value.trim();
+      if (!query) return showToast("Enter a username or ID", "error");
 
-// Check login for staff panel
-async function checkLogin() {
-  const res = await fetch("/api/check-auth");
-  if (res.status === 200) {
-    dashboard.classList.remove("hidden");
-    notLogged.style.display = "none";
-    loginBtn.style.display = "none";
-    loadStats();
-  }
-}
+      try {
+        const res = await fetch("/api/resolve-user", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query })
+        });
+        const data = await res.json();
+        if (!data.id) return showToast("User not found", "error");
 
-// Resolve user for mod actions
-async function resolveUser() {
-  const query = document.getElementById("userQuery").value.trim();
-  if (!query) return alert("Enter username or ID");
+        resolvedUserId = data.id;
+        document.getElementById('resolvedText').textContent = `${data.username} · ${data.id}`;
+        document.getElementById('resolvedUser').classList.remove("hidden");
+        showToast(`Loaded: ${data.username}`, "success");
+      } catch(e) { showToast("Failed to resolve user", "error"); }
+    }
 
-  const res = await fetch("/api/resolve-user", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ query })
-  });
+    async function action(type) {
+      if (!resolvedUserId) return showToast("Load a user first", "error");
 
-  const data = await res.json();
-  if (!data.id) return alert("User not found");
+      if (type === "warnings") {
+        try {
+          const res = await fetch(`/api/warnings/${resolvedUserId}`);
+          const data = await res.json();
+          allWarnings = data.warnings.map(w => ({ ...w, userId: resolvedUserId }));
+          renderTable(allWarnings);
+          showToast(`Loaded ${allWarnings.length} warnings`, "success");
+        } catch(e) { showToast("Failed to load warnings", "error"); }
+        return;
+      }
 
-  resolvedUserId = data.id;
-  resolvedUser.textContent = `Loaded User: ${data.username} (${data.id})`;
-  resolvedUser.classList.remove("hidden");
+      try {
+        const res = await fetch(`/api/${type}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: resolvedUserId, reason: document.getElementById('reason').value })
+        });
+        const data = await res.json();
+        showToast(data.message || `${type} action executed`);
+        loadStats();
+      } catch(e) { showToast("Action failed", "error"); }
+    }
 
-  document.getElementById("modTools").classList.remove("opacity-0");
-  document.getElementById("searchWarnings").classList.remove("opacity-0");
-  document.getElementById("warningsTableSection").classList.remove("opacity-0");
-  document.getElementById("modTools").classList.add("slide-in");
-  document.getElementById("searchWarnings").classList.add("slide-in");
-  document.getElementById("warningsTableSection").classList.add("slide-in");
-}
+    async function loadStats() {
+      try {
+        const res = await fetch("/api/stats");
+        const data = await res.json();
 
-// Mod actions
-async function action(type) {
-  if (!resolvedUserId) return alert("Load a user first");
+        animateCount('warnCount', data.warns.reduce((a,b)=>a+b,0));
+        animateCount('timeoutCount', data.timeouts.reduce((a,b)=>a+b,0));
+        animateCount('banCount', data.bans.reduce((a,b)=>a+b,0));
 
-  if (type === "warnings") {
-    const res = await fetch(`/api/warnings/${resolvedUserId}`);
-    const data = await res.json();
-    allWarnings = data.warnings.map(w => ({ ...w, userId: resolvedUserId }));
-    renderTable(allWarnings);
-    return;
-  }
+        if (chart) chart.destroy();
+        const ctx = document.getElementById('modChart').getContext('2d');
+        chart = new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: data.labels,
+            datasets: [
+              { label: "Warns", data: data.warns, borderColor: "#ffaa00", backgroundColor: "rgba(255,170,0,0.07)", tension: 0.4, borderWidth: 2, pointBackgroundColor: "#ffaa00", pointRadius: 4, pointHoverRadius: 7 },
+              { label: "Timeouts", data: data.timeouts, borderColor: "#5b6fff", backgroundColor: "rgba(91,111,255,0.07)", tension: 0.4, borderWidth: 2, pointBackgroundColor: "#5b6fff", pointRadius: 4, pointHoverRadius: 7 },
+              { label: "Bans", data: data.bans, borderColor: "#ff3e3e", backgroundColor: "rgba(255,62,62,0.07)", tension: 0.4, borderWidth: 2, pointBackgroundColor: "#ff3e3e", pointRadius: 4, pointHoverRadius: 7 }
+            ]
+          },
+          options: {
+            plugins: {
+              legend: { labels: { color: '#6070a0', font: { family: 'Oxanium', size: 11 }, boxWidth: 12, boxHeight: 12 } },
+              tooltip: { backgroundColor: 'rgba(10,15,30,0.95)', borderColor: 'rgba(91,111,255,0.2)', borderWidth: 1, padding: 12, titleFont: { family: 'Oxanium' }, bodyFont: { family: 'Rajdhani', size: 13 } }
+            },
+            scales: {
+              x: { ticks: { color: '#6070a0', font: { family: 'Rajdhani', size: 12 } }, grid: { color: 'rgba(91,111,255,0.05)' } },
+              y: { ticks: { color: '#6070a0', font: { family: 'Rajdhani', size: 12 } }, grid: { color: 'rgba(91,111,255,0.05)' } }
+            }
+          }
+        });
+      } catch(e) {}
+    }
 
-  const res = await fetch(`/api/${type}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ userId: resolvedUserId, reason: reason.value })
-  });
+    function animateCount(id, target) {
+      const el = document.getElementById(id);
+      const start = parseInt(el.textContent) || 0;
+      const duration = 600;
+      const startTime = performance.now();
+      function update(now) {
+        const t = Math.min((now - startTime) / duration, 1);
+        const ease = 1 - Math.pow(1 - t, 3);
+        el.textContent = Math.round(start + (target - start) * ease);
+        if (t < 1) requestAnimationFrame(update);
+      }
+      requestAnimationFrame(update);
+    }
 
-  const data = await res.json();
-  alert(data.message);
-  loadStats();
-}
+    function renderTable(warns) {
+      const tbody = document.getElementById('warningsTable');
+      tbody.innerHTML = warns.length
+        ? warns.map((w,i) => `
+          <tr style="animation:fadeUp 0.3s ease ${i*0.05}s forwards;opacity:0">
+            <td style="color:var(--text-muted)">${i+1}</td>
+            <td><span class="mono">${w.userId}</span></td>
+            <td>${w.moderator||'—'}</td>
+            <td><span class="badge badge-warn">${w.reason||'No reason'}</span></td>
+            <td style="color:var(--text-muted);font-size:0.8rem">${w.date}</td>
+          </tr>`).join("")
+        : `<tr><td colspan="5" style="color:var(--text-muted);text-align:center;padding:2rem">No records</td></tr>`;
+    }
 
-// Load stats chart
-async function loadStats() {
-  const res = await fetch("/api/stats");
-  const data = await res.json();
+    function filterWarnings() {
+      const q = document.getElementById('searchInput').value.toLowerCase();
+      renderTable(allWarnings.filter(w => w.userId.toLowerCase().includes(q)));
+    }
 
-  warnCount.textContent = data.warns.reduce((a,b)=>a+b,0);
-  timeoutCount.textContent = data.timeouts.reduce((a,b)=>a+b,0);
-  banCount.textContent = data.bans.reduce((a,b)=>a+b,0);
+    let publicWarnings = [];
+    async function loadPublicWarnings() {
+      try {
+        const res = await fetch('/warnings.json');
+        const data = await res.json();
+        publicWarnings = data.warnings || [];
+        renderPublicWarnings(publicWarnings);
+      } catch(err) {
+        document.getElementById('publicWarningsTable').innerHTML =
+          '<tr><td colspan="4" style="color:var(--danger);text-align:center;padding:2rem">Failed to load</td></tr>';
+      }
+    }
 
-  if (chart) chart.destroy();
-  chart = new Chart(modChart, {
-    type: "line",
-    data: {
-      labels: data.labels,
-      datasets: [
-        { label: "Warns", data: data.warns, borderColor: "#f97316", backgroundColor: "rgba(249,115,22,0.2)", tension: 0.4 },
-        { label: "Timeouts", data: data.timeouts, borderColor: "#a855f7", backgroundColor: "rgba(168,85,247,0.2)", tension: 0.4 },
-        { label: "Bans", data: data.bans, borderColor: "#ef4444", backgroundColor: "rgba(239,68,68,0.2)", tension: 0.4 }
-      ]
-    },
-    options: { plugins: { legend: { labels: { color: 'white' } } }, scales: { x: { ticks: { color: 'white' } }, y: { ticks: { color: 'white' } } } }
-  });
-}
+    function renderPublicWarnings(list) {
+      const tbody = document.getElementById('publicWarningsTable');
+      if (!list.length) {
+        tbody.innerHTML = '<tr><td colspan="4" style="color:var(--text-muted);text-align:center;padding:2rem">No public warnings found</td></tr>';
+        return;
+      }
+      tbody.innerHTML = list.map((w,i) => `
+        <tr style="animation:fadeUp 0.3s ease ${i*0.04}s forwards;opacity:0">
+          <td style="color:var(--text-muted)">${i+1}</td>
+          <td><span class="mono">${w.userId}</span></td>
+          <td><span class="badge badge-warn">${w.reason||'No reason'}</span></td>
+          <td style="color:var(--text-muted);font-size:0.8rem">${w.date}</td>
+        </tr>`).join('');
+    }
 
-// Render staff warnings table
-function renderTable(warns) {
-  warningsTable.innerHTML = warns.length
-    ? warns.map((w,i)=>`
-      <tr class="border-t border-gray-700 hover:bg-gray-900 transition">
-        <td class="p-2">${i+1}</td>
-        <td class="p-2 font-mono text-xs">${w.userId}</td>
-        <td class="p-2">${w.moderator}</td>
-        <td class="p-2">${w.reason||"N/A"}</td>
-        <td class="p-2 text-gray-400 text-xs">${w.date}</td>
-      </tr>`).join("")
-    : `<tr><td colspan="5" class="p-4 text-center text-gray-500">No data</td></tr>`;
-}
+    function filterPublicWarnings() {
+      const q = document.getElementById('publicSearch').value.toLowerCase();
+      renderPublicWarnings(publicWarnings.filter(w => w.userId.toLowerCase().includes(q)));
+    }
 
-// Filter staff warnings
-function filterWarnings() {
-  const q = searchInput.value.toLowerCase();
-  renderTable(allWarnings.filter(w => w.userId.includes(q)));
-}
-
-// Public warnings
-let publicWarnings = [];
-async function loadPublicWarnings() {
-  try {
-    const res = await fetch('/warnings.json');
-    const data = await res.json();
-    publicWarnings = data.warnings || [];
-    renderPublicWarnings(publicWarnings);
-  } catch(err) {
-    document.getElementById('publicWarningsTable').innerHTML =
-      '<tr><td colspan="4" class="text-center text-red-500">Failed to load warnings</td></tr>';
-    console.error(err);
-  }
-}
-
-function renderPublicWarnings(list) {
-  const tbody = document.getElementById('publicWarningsTable');
-  if (!list.length) {
-    tbody.innerHTML = '<tr><td colspan="4" class="text-center text-gray-500">No public warnings</td></tr>';
-    return;
-  }
-  tbody.innerHTML = list.map((w,i)=>`
-    <tr>
-      <td>${i+1}</td>
-      <td class="font-mono text-xs">${w.userId}</td>
-      <td>${w.reason||"N/A"}</td>
-      <td class="text-gray-400 text-xs">${w.date}</td>
-    </tr>
-  `).join('');
-}
-
-// Filter public warnings
-function filterPublicWarnings() {
-  const q = publicSearch.value.toLowerCase();
-  renderPublicWarnings(publicWarnings.filter(w => w.userId.includes(q)));
-}
-
-checkLogin();
-loadPublicWarnings();
-</script>
+    checkLogin();
+    loadPublicWarnings();
+  </script>
 </body>
 </html>
