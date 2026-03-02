@@ -8,9 +8,6 @@ const fetch = require("node-fetch");
 const fs = require("fs");
 require("dotenv").config();
 
-// NGROK
-const ngrok = require("ngrok");
-
 const bot = require("./bot.js");
 const {
   banUser,
@@ -34,17 +31,12 @@ if (!fs.existsSync(STATS_FILE)) {
 function logStat(type) {
   const stats = JSON.parse(fs.readFileSync(STATS_FILE));
   const today = new Date().toISOString().split("T")[0];
-
-  if (!stats[today]) {
-    stats[today] = { warn: 0, timeout: 0, ban: 0 };
-  }
-
+  if (!stats[today]) stats[today] = { warn: 0, timeout: 0, ban: 0 };
   stats[today][type]++;
   fs.writeFileSync(STATS_FILE, JSON.stringify(stats, null, 2));
 }
 /* ----------------------------------------------------- */
 
-// Body parser & session
 app.use(bodyParser.json());
 app.use(session({
   secret: process.env.SESSION_SECRET || "mod-dashboard",
@@ -55,12 +47,11 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Passport serialization
 passport.serializeUser((user, done) => done(null, user));
 passport.deserializeUser((obj, done) => done(null, obj));
 
-// Discord OAuth2 Strategy
-let callbackURL = process.env.CALLBACK_URL || "http://localhost:3000/api/auth/discord/callback";
+let callbackURL = process.env.CALLBACK_URL || "http://localhost:3000/auth/discord/callback";
+
 passport.use(new DiscordStrategy({
   clientID: process.env.CLIENT_ID,
   clientSecret: process.env.CLIENT_SECRET,
@@ -69,7 +60,11 @@ passport.use(new DiscordStrategy({
 }, (accessToken, refreshToken, profile, done) => done(null, profile)));
 
 // Auth routes
-app.get("/auth/discord", passport.authenticate("discord"));
+app.get("/auth/discord", (req, res, next) => {
+  // Rebuild strategy with latest callbackURL in case ngrok updated it
+  passport.authenticate("discord")(req, res, next);
+});
+
 app.get("/auth/discord/callback",
   passport.authenticate("discord", { failureRedirect: "/" }),
   (req, res) => res.redirect("/dashboard")
@@ -91,10 +86,7 @@ async function checkAuth(req, res, next) {
     if (!response.ok) return res.status(500).send("Discord API error");
 
     const member = await response.json();
-    const allowedRoles = [
-      process.env.STAFF_ROLE_1,
-      process.env.STAFF_ROLE_2
-    ];
+    const allowedRoles = [process.env.STAFF_ROLE_1, process.env.STAFF_ROLE_2];
 
     if (!member.roles.some(r => allowedRoles.includes(r))) {
       return res.status(403).send("No permission");
@@ -108,12 +100,8 @@ async function checkAuth(req, res, next) {
 }
 
 // Serve dashboard
-app.get("/", (req, res) =>
-  res.sendFile(path.join(__dirname, "index.html"))
-);
-app.get("/dashboard", checkAuth, (req, res) =>
-  res.sendFile(path.join(__dirname, "index.html"))
-);
+app.get("/", (req, res) => res.sendFile(path.join(__dirname, "index.html")));
+app.get("/dashboard", checkAuth, (req, res) => res.sendFile(path.join(__dirname, "index.html")));
 
 // Auth status
 app.get("/api/check-auth", (req, res) => {
@@ -168,7 +156,6 @@ app.post("/api/unwarn", checkAuth, (req, res) => {
 app.get("/api/stats", checkAuth, (req, res) => {
   const stats = JSON.parse(fs.readFileSync(STATS_FILE));
   const labels = Object.keys(stats);
-
   res.json({
     labels,
     warns: labels.map(d => stats[d].warn),
@@ -180,26 +167,21 @@ app.get("/api/stats", checkAuth, (req, res) => {
 /* -------------------- RESOLVE USER ROUTE -------------------- */
 app.post("/api/resolve-user", checkAuth, async (req, res) => {
   const { query } = req.body;
-
   if (!query) return res.status(400).json({ error: "No query provided" });
 
   try {
     const guildId = process.env.GUILD_ID;
-    let userData;
 
-    // First, try fetching by user ID
     if (/^\d+$/.test(query)) {
       const response = await fetch(`https://discord.com/api/v10/users/${query}`, {
         headers: { Authorization: `Bot ${process.env.TOKEN}` }
       });
-
       if (response.ok) {
-        userData = await response.json();
+        const userData = await response.json();
         return res.json({ id: userData.id, username: userData.username });
       }
     }
 
-    // Otherwise, search guild members by username (case-insensitive)
     const membersResp = await fetch(
       `https://discord.com/api/v10/guilds/${guildId}/members?limit=1000`,
       { headers: { Authorization: `Bot ${process.env.TOKEN}` } }
@@ -211,10 +193,8 @@ app.post("/api/resolve-user", checkAuth, async (req, res) => {
            `${m.user.username}#${m.user.discriminator}`.toLowerCase() === query.toLowerCase()
     );
 
-    if (!member) return res.json({}); // not found
-
-    userData = { id: member.user.id, username: member.user.username };
-    res.json(userData);
+    if (!member) return res.json({});
+    res.json({ id: member.user.id, username: member.user.username });
 
   } catch (err) {
     console.error(err);
@@ -225,41 +205,39 @@ app.post("/api/resolve-user", checkAuth, async (req, res) => {
 /* -------------------- START SERVER + NGROK -------------------- */
 const port = process.env.PORT || 3000;
 
-(async () => {
-  const server = app.listen(port, async () => {
-    console.log(`✅ Dashboard running locally on port ${port}`);
-
-    // NGROK setup
+async function startNgrok(port) {
+  // Uninstall old ngrok and use @ngrok/ngrok if needed
+  // This supports both the old `ngrok` package and new `@ngrok/ngrok`
+  try {
+    // Try new @ngrok/ngrok package first
+    const ngrok = require("@ngrok/ngrok");
+    const listener = await ngrok.forward({
+      addr: port,
+      authtoken: process.env.NGROK_AUTH_TOKEN
+    });
+    const url = listener.url();
+    console.log(`🚀 Public URL: ${url}`);
+    console.log(`✅ Discord OAuth callback: ${url}/auth/discord/callback`);
+    callbackURL = `${url}/auth/discord/callback`;
+  } catch (e1) {
     try {
-      // Kill any leftover tunnels first
-      await ngrok.kill();
-
-      // Retry logic in case ngrok fails
-      let url;
-      const maxRetries = 3;
-      for (let i = 0; i < maxRetries; i++) {
-        try {
-          url = await ngrok.connect({
-            addr: port,
-            proto: "http", // HTTP tunnel
-            authtoken: process.env.NGROK_AUTH_TOKEN || undefined // optional
-          });
-          break; // success
-        } catch (err) {
-          console.warn(`⚠️ Ngrok attempt ${i + 1} failed: ${err.message || err}`);
-          if (i === maxRetries - 1) throw err; // give up after retries
-        }
-      }
-
+      // Fall back to old ngrok package
+      const ngrok = require("ngrok");
+      const url = await ngrok.connect({
+        addr: port,
+        authtoken: process.env.NGROK_AUTH_TOKEN
+      });
       console.log(`🚀 Public URL: ${url}`);
       console.log(`✅ Discord OAuth callback: ${url}/auth/discord/callback`);
-
-      // Update callbackURL dynamically
       callbackURL = `${url}/auth/discord/callback`;
-
-    } catch (err) {
-      console.error("⚠️ Failed to start ngrok after retries:", err.message || err);
-      console.log("ℹ️ You can still access your website locally at http://localhost:" + port);
+    } catch (e2) {
+      console.warn("⚠️ Ngrok failed to start:", e2.message);
+      console.log(`ℹ️ Accessible locally at http://localhost:${port}`);
     }
-  });
-})();
+  }
+}
+
+app.listen(port, async () => {
+  console.log(`✅ Dashboard running locally on port ${port}`);
+  await startNgrok(port);
+});
